@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "tr", "xtr"
+]
+
+
+

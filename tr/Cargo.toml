@@ -1,0 +1,7 @@
+[package]
+name = "tr"
+version = "0.0.1"
+authors = ["Olivier Goffart <ogoffart@woboq.com>"]
+
+[dependencies]
+gettext-rs = "0.4.1"

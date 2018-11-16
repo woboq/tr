@@ -1,0 +1,13 @@
+[package]
+name = "xtr"
+version = "0.0.0"
+authors = ["Olivier Goffart <ogoffart@woboq.com>"]
+description = "Extract strings from a rust crate to be translated with gettext"
+license = "AGPL-3.0"
+
+[dependencies]
+proc-macro2 = "0.4.23"
+syn = { version = "0.15.20", features=["full", "visit", "extra-traits"] }
+clap = "2.32"
+tr = { path="../tr" }
+failure = "0.1.3"
