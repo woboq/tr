@@ -30,7 +30,7 @@ pub struct Spec {
 
 #[derive(Debug, Clone)]
 struct Location {
-    pub file: String,
+    pub file: std::path::PathBuf,
     pub line: usize,
 }
 
@@ -66,11 +66,13 @@ fn main() -> Result<(), Error> {
                 .use_delimiter(false)
                 .multiple(true)
                 .help(&tr!(
+                    // documentation for keywordspec goes here
                     "Specify keywordspec as an additional keyword to be looked for.\
                      Refer to the xgettext documentation for more info."
                 )),
         ).arg(
             Arg::with_name("INPUT")
+                // documentation for the input
                 .help(&tr!("Rust file to parse"))
                 .required(true)
                 .index(1),
@@ -115,20 +117,22 @@ fn main() -> Result<(), Error> {
             .collect()
     };
 
-    let mut ex = extract_messages::Extractor {
-        specs: &specs,
-        results: Vec::new(),
-    };
+    let mut results = Vec::new();
 
     crate_visitor::visit_crate(
         matches.value_of("INPUT").expect("Missing crate root"),
-        |_, _, file| ex.extract_messages(file.into_token_stream()),
+        |path, source, file| {
+            extract_messages::extract_messages(
+                &mut results,
+                &specs,
+                file.into_token_stream(),
+                source,
+                path,
+            )
+        },
     )?;
 
-    generator::generate(
-        matches.value_of("OUTPUT").unwrap_or("messages.po"),
-        ex.results,
-    )?;
+    generator::generate(matches.value_of("OUTPUT").unwrap_or("messages.po"), results)?;
 
     Ok(())
 }

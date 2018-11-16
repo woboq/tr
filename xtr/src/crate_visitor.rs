@@ -53,7 +53,7 @@ where
             return Err(err);
         }
 
-        (self.mod_visitor)(&current_path, &s, &fi)?;
+        (self.mod_visitor)(&self.current_path, &s, &fi)?;
 
         swap(&mut self.current_path, &mut current_path);
         swap(&mut self.mod_dir, &mut mod_dir);

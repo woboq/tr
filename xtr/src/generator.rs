@@ -15,7 +15,7 @@ pub fn generate<P: AsRef<Path>>(output: P, messages: Vec<Message>) -> ::std::io:
         if !m.locations.is_empty() {
             write!(output, "#:")?;
             for l in m.locations {
-                write!(output, " {}:{}", l.file, l.line)?;
+                write!(output, " {}:{}", l.file.to_string_lossy(), l.line)?;
             }
             writeln!(output)?;
         }
