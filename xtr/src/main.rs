@@ -5,6 +5,7 @@ extern crate clap;
 extern crate failure;
 #[macro_use]
 extern crate tr;
+extern crate chrono;
 
 use clap::{App, Arg};
 use failure::Error;
@@ -34,6 +35,9 @@ struct Location {
     pub line: usize,
 }
 
+#[derive(Debug, Clone, Default, Eq, PartialEq, Hash)]
+pub struct MessageKey(String, String);
+
 #[derive(Debug, Clone, Default)]
 pub struct Message {
     msgctxt: Option<String>,
@@ -41,9 +45,20 @@ pub struct Message {
     plural: Option<String>,
     locations: Vec<Location>,
     comments: Option<String>,
+    /// that's just keeping the count, so they can be sorted
+    index: usize,
+}
+
+pub struct OutputDetails {
+    omit_header: bool,
+    copyright_holder: Option<String>,
+    package_name: Option<String>,
+    package_version: Option<String>,
+    bugs_address: Option<String>,
 }
 
 fn main() -> Result<(), Error> {
+    // The options are made to be compatible with xgetext options
     let matches = App::new("xtr")
         .version(crate_version!())
         .author(crate_authors!())
@@ -69,6 +84,33 @@ fn main() -> Result<(), Error> {
                     // documentation for keywordspec goes here
                     "Specify keywordspec as an additional keyword to be looked for.\
                      Refer to the xgettext documentation for more info."
+                )),
+        ).arg(
+            Arg::with_name("omit-header")
+                .long("omit-header")
+                .help(&tr!(r#"Don’t write header with ‘msgid ""’ entry"#)),
+        ).arg(
+            Arg::with_name("copyright-holder")
+                .long("copyright-holder")
+                .value_name("string")
+                .help(&tr!("Set the copyright holder in the output.")),
+        ).arg(
+            Arg::with_name("package-name")
+                .long("package-name")
+                .value_name("package")
+                .help(&tr!("Set the package name in the header of the output.")),
+        ).arg(
+            Arg::with_name("package-version")
+                .long("package-version")
+                .value_name("version")
+                .help(&tr!("Set the package version in the header of the output.")),
+        ).arg(
+            Arg::with_name("msgid-bugs-address")
+                .long("msgid-bugs-address")
+                .value_name("email@address")
+                .help(&tr!(
+                    "Set the reporting address for msgid bugs. This is the email address \
+                     or URL to which the translators shall report bugs in the untranslated strings"
                 )),
         ).arg(
             Arg::with_name("INPUT")
@@ -117,7 +159,7 @@ fn main() -> Result<(), Error> {
             .collect()
     };
 
-    let mut results = Vec::new();
+    let mut results = HashMap::new();
 
     crate_visitor::visit_crate(
         matches.value_of("INPUT").expect("Missing crate root"),
@@ -132,7 +174,21 @@ fn main() -> Result<(), Error> {
         },
     )?;
 
-    generator::generate(matches.value_of("OUTPUT").unwrap_or("messages.po"), results)?;
+    let od = OutputDetails {
+        omit_header: matches.is_present("omit-header"),
+        copyright_holder: matches.value_of("copyright-holder").map(str::to_owned),
+        package_name: matches.value_of("package-name").map(str::to_owned),
+        package_version: matches.value_of("package-version").map(str::to_owned),
+        bugs_address: matches.value_of("msgid-bugs-address").map(str::to_owned),
+    };
+
+    let mut messages: Vec<_> = results.values().collect();
+    messages.sort_by_key(|m| m.index);
+    generator::generate(
+        matches.value_of("OUTPUT").unwrap_or("messages.po"),
+        od,
+        messages,
+    )?;
 
     Ok(())
 }

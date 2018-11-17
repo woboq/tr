@@ -1,11 +1,11 @@
-use super::{Location, Message, Spec, SpecArg};
+use super::{Location, Message, MessageKey, Spec, SpecArg};
 use failure::Error;
 use proc_macro2::{TokenStream, TokenTree};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 pub fn extract_messages(
-    results: &mut Vec<Message>,
+    results: &mut HashMap<MessageKey, Message>,
     specs: &HashMap<String, Spec>,
     stream: TokenStream,
     source: &str,
@@ -30,7 +30,7 @@ fn split_lines(source: &str) -> Vec<&str> {
 
 #[allow(dead_code)]
 struct Extractor<'a> {
-    results: &'a mut Vec<Message>,
+    results: &'a mut HashMap<MessageKey, Message>,
     specs: &'a HashMap<String, Spec>,
     path: &'a PathBuf,
     source_lines: Vec<&'a str>,
@@ -101,75 +101,79 @@ impl<'a> Extractor<'a> {
             }
         }
 
-        let mut msg = Message::default();
-        //let num_str = args.iter().position(|&r| r.is_none()) .unwrap_or_else(args.len());
+        let mut msgctxt: Option<String> = None;
+        let mut msgid: Option<proc_macro2::Literal> = None;
+        let mut plural: Option<String> = None;
+
         if spec.args.is_empty() {
-            if let Some(Some(lit)) = args.first() {
-                if let Some(s) = literal_to_string(lit) {
-                    msg.msgid = s.clone();
-                    self.extract_position_and_comment(&mut msg, lit.span());
-                    self.results.push(msg);
-                }
+            if let Some(lit) = args.first() {
+                msgid = lit.clone();
             }
             // TODO: other cases
-            return;
         }
 
-        let mut msgset = false;
         for a in spec.args.iter() {
             match a {
                 SpecArg::MsgId(i) => {
-                    if msgset {
-                        msg.plural = args
+                    if msgid.is_some() {
+                        plural = args
                             .get(*i as usize - 1)
                             .and_then(|x| x.as_ref())
                             .and_then(|lit| literal_to_string(lit));
-                    } else if let Some(Some(lit)) = args.get(*i as usize - 1) {
-                        if let Some(s) = literal_to_string(lit) {
-                            msg.msgid = s.clone();
-                            self.extract_position_and_comment(&mut msg, lit.span());
-                            msgset = true;
-                        }
+                    } else if let Some(lit) = args.get(*i as usize - 1) {
+                        msgid = lit.clone();
                     }
                 }
                 SpecArg::Context(i) => {
-                    msg.msgctxt = args
+                    msgctxt = args
                         .get(*i as usize - 1)
                         .and_then(|x| x.as_ref())
                         .and_then(|lit| literal_to_string(lit));
                 }
             }
         }
-        if msgset {
-            self.results.push(msg)
-        }
-    }
 
-    #[allow(unused_variables)]
-    fn extract_position_and_comment(&self, message: &mut Message, span: proc_macro2::Span) {
-        #[cfg(procmacro2_semver_exempt)]
-        {
-            let mut line = span.start().line;
-            if line > 0 {
-                message.locations.push(Location {
-                    file: self.path.clone(),
-                    line,
+        if let Some(lit) = msgid {
+            if let Some(msgid) = literal_to_string(&lit) {
+                let key = MessageKey(msgid.clone(), msgctxt.clone().unwrap_or_default());
+                let index = self.results.len();
+                let mut message = self.results.entry(key).or_insert_with(|| Message {
+                    msgctxt,
+                    msgid,
+                    index,
+                    ..Default::default()
                 });
-            }
+                if plural.is_some() {
+                    message.plural = plural;
+                }
 
-            line -= 1;
-            while line > 1 {
-                line -= 1;
-                let line_str = self.source_lines.get(line).unwrap().trim();
-                if line_str.starts_with("//") {
-                    let line_str = line_str.trim_start_matches('/').trim_start();
-                    message.comments = if let Some(ref string) = message.comments {
-                        Some(format!("{}\n{}", line_str, string))
-                    } else {
-                        Some(line_str.to_owned())
+                // Extract the location and the comments from lit and merge it into message
+                #[cfg(procmacro2_semver_exempt)]
+                {
+                    let span = lit.span();
+                    let mut line = span.start().line;
+                    if line > 0 {
+                        message.locations.push(Location {
+                            file: self.path.clone(),
+                            line,
+                        });
                     }
-                } else {
-                    break;
+
+                    line -= 1;
+                    while line > 1 {
+                        line -= 1;
+                        let line_str = self.source_lines.get(line).unwrap().trim();
+                        if line_str.starts_with("//") {
+                            let line_str = line_str.trim_start_matches('/').trim_start();
+                            message.comments = if let Some(ref string) = message.comments {
+                                Some(format!("{}\n{}", line_str, string))
+                            } else {
+                                Some(line_str.to_owned())
+                            }
+                        } else {
+                            break;
+                        }
+                    }
                 }
             }
         }
