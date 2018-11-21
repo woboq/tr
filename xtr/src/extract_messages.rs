@@ -1,4 +1,4 @@
-use super::{Location, Message, MessageKey, Spec, SpecArg};
+use super::{Message, MessageKey, Spec, SpecArg};
 use failure::Error;
 use proc_macro2::{TokenStream, TokenTree};
 use std::collections::HashMap;
@@ -153,7 +153,7 @@ impl<'a> Extractor<'a> {
                     let span = lit.span();
                     let mut line = span.start().line;
                     if line > 0 {
-                        message.locations.push(Location {
+                        message.locations.push(super::Location {
                             file: self.path.clone(),
                             line,
                         });

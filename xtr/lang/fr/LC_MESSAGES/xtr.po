@@ -1,0 +1,63 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Olivier Goffart <ogoffart@woboq.com>, 2018.
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-11-21 14:30+0000\n"
+"PO-Revision-Date: 2018-11-21 15:18+0100\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Lokalize 2.0\n"
+
+#: src/main.rs:70
+msgid "Use name.po for output (instead of messages.po)"
+msgstr "Utilise name.po pour le fichier de sortie (à la place de messages.po)"
+
+#: src/main.rs:77
+msgid "Write output to specified file (instead of messages.po)."
+msgstr ""
+"Écrit la sortie dans le fichier spécifier (à la place de messages.po). "
+
+#. documentation for keywordspec goes here
+#: src/main.rs:88
+msgid ""
+"Specify keywordspec as an additional keyword to be looked for.Refer to the "
+"xgettext documentation for more info."
+msgstr ""
+"Specifie keywordspec comme mot clé additional. La documentation de xfettext "
+"contiens plus d'information"
+
+#: src/main.rs:94
+msgid "Don’t write header with ‘msgid \"\"’ entry"
+msgstr "N'écris pas l'en-tête avec « msgid \"\" »"
+
+#: src/main.rs:99
+msgid "Set the copyright holder in the output."
+msgstr "Spécifie le détenneur du copyright dans la sortie"
+
+#: src/main.rs:104
+msgid "Set the package name in the header of the output."
+msgstr "Spécifie le nom du packet"
+
+#: src/main.rs:109
+msgid "Set the package version in the header of the output."
+msgstr "donne la version du packet"
+
+#: src/main.rs:115
+msgid ""
+"Set the reporting address for msgid bugs. This is the email address or URL "
+"to which the translators shall report bugs in the untranslated strings"
+msgstr ""
+"donne l'addresse pour reporter les bugs dans les texte. C'est une addresse "
+"email ou une URL que les traducteurs peuvent utiliser pour rapporter des "
+"bugs dans les chaine non traduite"
+
+#. documentation for the input
+#: src/main.rs:121
+msgid "Rust file to parse"
+msgstr "Fichier Rust à parser"

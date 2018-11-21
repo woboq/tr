@@ -58,14 +58,20 @@ pub struct OutputDetails {
 }
 
 fn main() -> Result<(), Error> {
+    tr_init!(concat!(env!("PWD"), "/lang/"));
+
     // The options are made to be compatible with xgetext options
     let matches = App::new("xtr")
         .version(crate_version!())
         .author(crate_authors!())
         .about(crate_description!())
-        //        .arg(Arg::with_name("domain").short("d").long("default-domain")
-        //            .help(tr!("Use name.po for output (instead of messages.po)")))
         .arg(
+            Arg::with_name("domain")
+                .short("d")
+                .long("default-domain")
+                .value_name("domain")
+                .help(&tr!("Use name.po for output (instead of messages.po)")),
+        ).arg(
             Arg::with_name("OUTPUT")
                 .short("o")
                 .long("output")
@@ -185,7 +191,10 @@ fn main() -> Result<(), Error> {
     let mut messages: Vec<_> = results.values().collect();
     messages.sort_by_key(|m| m.index);
     generator::generate(
-        matches.value_of("OUTPUT").unwrap_or("messages.po"),
+        matches
+            .value_of("OUTPUT")
+            .map(|s| s.to_owned())
+            .unwrap_or_else(|| format!("{}.po", matches.value_of("domain").unwrap_or("messages"))),
         od,
         messages,
     )?;
