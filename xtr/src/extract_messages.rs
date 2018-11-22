@@ -76,59 +76,85 @@ impl<'a> Extractor<'a> {
     fn found_string(&mut self, spec: &Spec, stream: TokenStream) {
         let mut token_iter = stream.into_iter().peekable();
 
-        let mut args = Vec::new();
-        'm: loop {
-            if let Some(TokenTree::Literal(literal)) = token_iter.peek() {
-                args.push(Some(literal.clone()));
-            } else {
-                args.push(None);
-            }
-
-            // skip to the comma
-            while let Some(token) = token_iter.next() {
-                if let TokenTree::Punct(punct) = token {
-                    if punct.to_string() == "," {
-                        continue 'm;
-                    }
-                }
-            }
-            break;
-        }
-
-        if let Some(num) = spec.argnum {
-            if args.len() != num as usize {
-                return;
-            }
-        }
-
         let mut msgctxt: Option<String> = None;
         let mut msgid: Option<proc_macro2::Literal> = None;
         let mut plural: Option<String> = None;
 
         if spec.args.is_empty() {
-            if let Some(lit) = args.first() {
-                msgid = lit.clone();
-            }
-            // TODO: other cases
-        }
+            let mut literal = if let Some(TokenTree::Literal(literal)) = token_iter.next() {
+                literal
+            } else {
+                return; // syntax error
+            };
 
-        for a in spec.args.iter() {
-            match a {
-                SpecArg::MsgId(i) => {
-                    if msgid.is_some() {
-                        plural = args
+            let mut token = token_iter.next();
+            if let Some(TokenTree::Punct(punct)) = token.clone() {
+                if punct.to_string() == "=" {
+                    token = token_iter.next();
+                    if let Some(TokenTree::Punct(punct)) = token.clone() {
+                        if punct.to_string() == ">" {
+                            if let Some(TokenTree::Literal(lit)) = token_iter.next() {
+                                msgctxt = literal_to_string(&literal);
+                                literal = lit;
+                                token = token_iter.next();
+                            } else {
+                                return; // syntax error
+                            }
+                        }
+                    }
+                }
+            }
+            msgid = Some(literal.clone());
+            if let Some(TokenTree::Punct(punct)) = token {
+                if punct.to_string() == "|" {
+                    if let Some(TokenTree::Literal(lit)) = token_iter.next() {
+                        plural = literal_to_string(&lit);
+                    }
+                }
+            }
+        } else {
+            let mut args = Vec::new();
+            'm: loop {
+                if let Some(TokenTree::Literal(literal)) = token_iter.peek() {
+                    args.push(Some(literal.clone()));
+                } else {
+                    args.push(None);
+                }
+
+                // skip to the comma
+                while let Some(token) = token_iter.next() {
+                    if let TokenTree::Punct(punct) = token {
+                        if punct.to_string() == "," {
+                            continue 'm;
+                        }
+                    }
+                }
+                break;
+            }
+
+            if let Some(num) = spec.argnum {
+                if args.len() != num as usize {
+                    return;
+                }
+            }
+            for a in spec.args.iter() {
+                match a {
+                    SpecArg::MsgId(i) => {
+                        if msgid.is_some() {
+                            plural = args
+                                .get(*i as usize - 1)
+                                .and_then(|x| x.as_ref())
+                                .and_then(|lit| literal_to_string(lit));
+                        } else if let Some(lit) = args.get(*i as usize - 1) {
+                            msgid = lit.clone();
+                        }
+                    }
+                    SpecArg::Context(i) => {
+                        msgctxt = args
                             .get(*i as usize - 1)
                             .and_then(|x| x.as_ref())
                             .and_then(|lit| literal_to_string(lit));
-                    } else if let Some(lit) = args.get(*i as usize - 1) {
-                        msgid = lit.clone();
                     }
-                }
-                SpecArg::Context(i) => {
-                    msgctxt = args
-                        .get(*i as usize - 1)
-                        .and_then(|x| x.as_ref())
-                        .and_then(|lit| literal_to_string(lit));
                 }
             }
         }
