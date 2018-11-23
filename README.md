@@ -8,14 +8,14 @@ There are two crates
 
 * `xtr` is a binary similar to GNU's `xgettext` which extract string from a rust crate.
   It can extract strings of crate using the `tr` macro from this sibling crate, or using other
-  gettext based localisation crates such as (https://crates.io/crates/gettext-rs)[`gettext-rs`],
-  (https://crates.io/crates/gettext)[`gettext`], (https://github.com/BaptisteGelez/rocket_i18n)[`rocket_i18n`]
+  gettext based localisation crates such as [`gettext-rs`](https://crates.io/crates/gettext-rs),
+  [`gettext`](https://crates.io/crates/gettext), [`rocket_i18n`](https://github.com/BaptisteGelez/rocket_i18n)
 
 # How to translate a rust application
 
 1. Annotate the strings in your source code with the write macro/functions. You can use
-  * The the `tr!` macro from this `tr` crate (still work in progress), or
-  * The gettext function from the `gettext` or the `gettext-rs` crate
+    * The the `tr!` macro from this `tr` crate (still work in progress), or
+    * The gettext function from the `gettext` or the `gettext-rs` crate
 
 2. Run the `xtr` program over your crate to extract the string in a .pot file
 
@@ -23,9 +23,10 @@ There are two crates
 
 # About `xtr`
 
-## Why is another tool needed? Can we not simply use `xgettext` ?
+## Differences with `xgettext`
 
-At the moment, `xgettext` does not support the rust language. We can get decent result
+`xtr` is basically to be used in place of `xgettext` for Rust code.
+`xgettext` does not currently support the rust language. We can get decent result
 using the C language, but:
 
  * `xgettext` will not work properly if the code contains comments or string escaping that is
@@ -47,16 +48,56 @@ using the C language, but:
 
 # About `tr!`
 
-Properties of the `tr!` macro:
+ * The name comes from Qt's `tr()` function. It is a short name since it will be placed on most
+   string literal.
+ * The macro can do rust-style formating. (The argument must be in the same macro so
+   a [scripting system](https://techbase.kde.org/Localization/Concepts/Transcript) can be added.)
+ * Currently, the backend is using the [`gettext-rs`](https://crates.io/crates/gettext-rs) crate,
+   but this could be changed to something like [`gettext`](https://crates.io/crates/gettext) in the future
+ * Validity of the formating in the original or translation is not done yet, but could be done in the
+   future
+
+# Example
+
+```Rust
+#[macro_use]
+extern crate tr;
+fn main() {
+    // use the tr_init macro to tell gettext where to look for translations
+    tr_init!("/usr/share/locale/");
+    let folder = if let Some(folder) = std::env::args().nth(1) {
+        folder
+    } else {
+        println!("{}", tr!("Please give folder name"));
+        return;
+    };
+    match std::fs::read_dir(&folder) {
+        Err(e) => {
+            println!("{}", tr!("Could not read directory '{}'\nError: {}",
+                                folder, e));
+        }
+        Ok(r) => {
+            // Singlular/plural formating
+            println!("{}", tr!(
+                "The directory {} has one file" | "The directory {} has {n} files" % r.count(),
+                folder
+            ));
+        }
+    }
+}
+```
 
 
 # Licence
 
-The `tr` crate is licensed under the MIT license.
+ * The `tr` crate is licensed under the [MIT](https://opensource.org/licenses/MIT) license.
 
-The `xtr` program is a binary used only for development and is in the AGPL license.
+ * The `xtr` program is a binary used only for development and is in the
+   [GNU Affero General Public License (AGPL)](https://www.gnu.org/licenses/agpl-3.0.en.html).
 
+# Contribution
 
-
+Contributions are welcome. Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion
+in this crate by you, should be licensed under the MIT license.
 
 
