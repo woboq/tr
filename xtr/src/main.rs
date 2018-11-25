@@ -45,7 +45,7 @@ pub struct Spec {
     pub argnum: Option<u32>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct Location {
     pub file: std::path::PathBuf,
     pub line: usize,
@@ -54,7 +54,7 @@ struct Location {
 #[derive(Debug, Clone, Default, Eq, PartialEq, Hash)]
 pub struct MessageKey(String, String);
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Message {
     msgctxt: Option<String>,
     msgid: String,
@@ -142,44 +142,54 @@ fn main() -> Result<(), Error> {
                 .index(1),
         ).get_matches();
 
-    let specs: HashMap<String, Spec> = if let Some(val) = matches.values_of("KEYWORDS") {
-        let mut specs = HashMap::new();
-        for k in val {
-            if let Some(colon) = k.find(':') {
-                let (name, desc) = k.split_at(colon);
-                let spec = desc[1..]
-                    .split(',')
-                    .map(|d| {
-                        if d.ends_with('c') {
-                            return SpecArg::Context(
-                                d[..d.len() - 1].parse().expect("invalid keyword spec"),
-                            );
-                        }
-                        SpecArg::MsgId(d.parse().expect("invalid keyword spec"))
-                        // TODO: comment or argnum
-                    }).collect();
-                specs.insert(
-                    name.to_owned(),
-                    Spec {
-                        args: spec,
-                        comment: None,
-                        argnum: None,
-                    },
-                );
-            } else {
-                specs.insert(k.to_owned(), Spec::default());
-            }
+    let keywords = matches
+        .values_of("KEYWORDS")
+        .map(|x| x.collect())
+        .unwrap_or_else(|| {
+            vec![
+                "tr",
+                "gettext",
+                "dgettext:2",
+                "dcgettext:2",
+                "ngettext:1,2",
+                "dngettext:2,3",
+                "dcngettext:2,3",
+                "gettext_noop",
+                "pgettext:1c,2",
+                "dpgettext:2c,3",
+                "dcpgettext:2c,3",
+                "npgettext:1c,2,3",
+                "dnpgettext:2c,3,4",
+                "dcnpgettext:2c,3,4",
+            ]
+        });
+    let mut specs = HashMap::new();
+    for k in keywords {
+        if let Some(colon) = k.find(':') {
+            let (name, desc) = k.split_at(colon);
+            let spec = desc[1..]
+                .split(',')
+                .map(|d| {
+                    if d.ends_with('c') {
+                        return SpecArg::Context(
+                            d[..d.len() - 1].parse().expect("invalid keyword spec"),
+                        );
+                    }
+                    SpecArg::MsgId(d.parse().expect("invalid keyword spec"))
+                    // TODO: comment or argnum
+                }).collect();
+            specs.insert(
+                name.to_owned(),
+                Spec {
+                    args: spec,
+                    comment: None,
+                    argnum: None,
+                },
+            );
+        } else {
+            specs.insert(k.to_owned(), Spec::default());
         }
-        specs
-    } else {
-        [
-            ("gettext".into(), Default::default()),
-            ("tr".into(), Default::default()),
-        ]
-            .iter()
-            .cloned()
-            .collect()
-    };
+    }
 
     let mut results = HashMap::new();
 

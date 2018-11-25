@@ -71,15 +71,10 @@ impl<'a> Extractor<'a> {
                         }
                         if skip {
                             token_iter.next();
-                            skip = false;
                         }
 
                         if let Some(TokenTree::Group(group)) = token_iter.peek() {
                             self.found_string(spec, group.stream());
-                            skip = true;
-                        }
-                        if skip {
-                            token_iter.next();
                         }
                     }
                 }
@@ -227,4 +222,135 @@ fn literal_to_string(lit: &proc_macro2::Literal) -> Option<String> {
         Ok(lit) => Some(lit.value()),
         Err(_) => None,
     }
+}
+
+#[test]
+fn test_extract_messages() {
+    fn make(msg: &str, p: &str, ctx: &str, co: &str, loc: &[usize]) -> Message {
+        use super::Location;
+        let opt = |x: &str| {
+            if x.is_empty() {
+                None
+            } else {
+                Some(x.to_owned())
+            }
+        };
+        let (locations, comments) = if cfg!(procmacro2_semver_exempt) {
+            (
+                loc.iter()
+                    .map(|l| Location {
+                        file: "myfile.rs".to_owned().into(),
+                        line: *l,
+                    }).collect(),
+                opt(co),
+            )
+        } else {
+            (Vec::new(), None)
+        };
+        Message {
+            msgctxt: opt(ctx),
+            msgid: msg.into(),
+            plural: opt(p),
+            locations,
+            comments,
+            index: 0,
+        }
+    }
+
+    let source = r##"fn foo() {
+        // comment 1
+        let x = tr!("Message 1");
+        // comment does not count
+
+        // comment 2
+        let x = tr!("ctx" => "Message 2");
+        // comment  does not count
+
+        let x = tr!("Message 3" | "Messages 3" % x);
+
+        // comment 4
+        let x = tr!("ctx4" => "Message 4" | "Messages 4" % x);
+
+        foobar1((foo(bar, boo)),2, "foobar1");
+        foobar2(1,"foobar2", "foobar2s", f("5", "4"), "ctx");
+
+        //recursive
+        let x = tr!("rec1 {}", tr!("rec2"));
+
+        let x = tr!(r#"raw\"ctx""# => r#"\raw\"#);
+
+        // comment does not count : xgettext takes the comment next to the string
+        let x = tr!(
+            //multi line
+            "multi-line \
+            second line"
+        );
+
+        let d = tr!("dup1");
+        let d = tr!("ctx" => "dup1");
+        let d = tr!("dup1");
+        let d = tr!("ctx" => "dup1");
+    }"##;
+
+    let r = vec![
+        make("Message 1", "", "", "comment 1", &[3]),
+        make("Message 2", "", "ctx", "comment 2", &[7]),
+        make("Message 3", "Messages 3", "", "", &[10]),
+        make("Message 4", "Messages 4", "ctx4", "comment 4", &[13]),
+        make("foobar1", "", "", "", &[15]),
+        make("foobar2", "foobar2s", "ctx", "", &[16]),
+        make("rec1 {}", "", "", "recursive", &[19]),
+        make("rec2", "", "", "recursive", &[19]),
+        make(r#"\raw\"#, "", r#"raw\"ctx""#, "", &[21]),
+        make("multi-line second line", "", "", "multi line", &[26]),
+        make("dup1", "", "", "", &[30, 32]),
+        make("dup1", "", "ctx", "", &[31, 33]),
+    ];
+
+    let specs = [
+        ("tr".into(), Default::default()),
+        (
+            "foobar1".into(),
+            Spec {
+                args: vec![SpecArg::MsgId(3)],
+                ..Default::default()
+            },
+        ),
+        (
+            "foobar2".into(),
+            Spec {
+                args: vec![SpecArg::MsgId(2), SpecArg::MsgId(3), SpecArg::Context(5)],
+                ..Default::default()
+            },
+        ),
+    ]
+        .iter()
+        .cloned()
+        .collect();
+
+    let mut results = HashMap::new();
+
+    let mut ex = Extractor {
+        results: &mut results,
+        specs: &specs,
+        path: &"myfile.rs".to_owned().into(),
+        source_lines: split_lines(source),
+    };
+    use std::str::FromStr;
+    ex.extract_messages(proc_macro2::TokenStream::from_str(source).unwrap())
+        .unwrap();
+    let mut messages: Vec<_> = ex.results.values().collect();
+    messages.sort_by_key(|m| m.index);
+    let mlen = messages.len();
+    for (a, b) in r.iter().zip(messages) {
+        let mut b = b.clone();
+        b.index = 0;
+        assert_eq!(*a, b);
+        /*assert_eq!(a.msgid, b.msgid);
+        assert_eq!(a.plural, b.plural);
+        assert_eq!(a.msgctxt, b.msgctxt);
+        assert_eq!(a.comment, b.comment);
+        assert_eq!(a.locations, b.locations);*/
+    }
+    assert_eq!(r.len(), mlen);
 }
