@@ -1,6 +1,6 @@
 [package]
 name = "xtr"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["Olivier Goffart <ogoffart@woboq.com>"]
 description = "Extract strings from a rust crate to be translated with gettext"
 license = "AGPL-3.0"
@@ -11,6 +11,6 @@ proc-macro2 = "0.4.24"
 # It is also used in extract_message.rs to parse the literals into their string prepresentation
 syn = { version = "0.15.20", features=["full", "visit", "extra-traits"] }
 clap = "2.32"
-tr = { path="../tr" }
+tr = { path="../tr", version = "0.1" }
 failure = "0.1.3"
 chrono = "0.4.6"
