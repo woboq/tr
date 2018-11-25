@@ -1,0 +1,16 @@
+language: rust
+rust:
+- stable
+- beta
+- nightly
+env:
+- RUSTFLAGS=
+- RUSTFLAGS="--cfg procmacro2_semver_exempt"
+script:
+- cargo test
+- cargo run xtr --help
+- LANGUAGE=fr cargo run xtr --help
+- LANGUAGE=de cargo run xtr --help
+notifications:
+  email:
+    on_success: never

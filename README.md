@@ -1,5 +1,7 @@
 # Localisation of rust applications
 
+[![Travis Build Status](https://travis-ci.org/woboq/tr.svg?branch=master)](https://travis-ci.org/woboq/tr)
+
 This repository is an attempt to make it possible to localize rust application.
 There are two crates
 

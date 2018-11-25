@@ -74,7 +74,7 @@ pub struct OutputDetails {
 }
 
 fn main() -> Result<(), Error> {
-    tr_init!(concat!(env!("PWD"), "/lang/"));
+    tr_init!(concat!(env!("CARGO_MANIFEST_DIR"), "/lang/"));
 
     // The options are made to be compatible with xgetext options
     let matches = App::new("xtr")
