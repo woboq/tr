@@ -4,6 +4,12 @@ version = "0.1.0"
 authors = ["Olivier Goffart <ogoffart@woboq.com>"]
 description = "Extract strings from a rust crate to be translated with gettext"
 license = "AGPL-3.0"
+readme = "../README.md"
+repository = "https://github.com/woboq/tr"
+documentation = "https://docs.rs/tr"
+keywords = ["localization", "l10n", "i18n", "gettext", "xgettext"]
+categories = ["internationalization", "localization"]
+
 
 [dependencies]
 proc-macro2 = "0.4.24"

@@ -1,9 +1,14 @@
 [package]
 name = "tr"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Olivier Goffart <ogoffart@woboq.com>"]
 description = "tr! macro for localisation"
 license = "MIT"
+readme = "../README.md"
+repository = "https://github.com/woboq/tr"
+documentation = "https://docs.rs/tr"
+keywords = ["internationalization", "localization", "l10n", "i18n", "gettext"]
+categories = ["internationalization", "localization"]
 
 [dependencies]
 gettext-rs = "0.4.1"
