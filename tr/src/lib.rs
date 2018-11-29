@@ -84,11 +84,32 @@ pub mod runtime_format {
         fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
             let mut arg_idx = 0;
             let mut pos = 0;
-            while let Some(mut p) = self.format_str[pos..].find('{') {
+            while let Some(mut p) = self.format_str[pos..].find(|x| x=='{'|| x=='}') {
                 if self.format_str.len() - pos < p + 1 {
                     break;
                 }
                 p += pos;
+
+                // Skip escaped }
+                if self.format_str.get(p..=p) == Some("}") {
+                    self.format_str[pos..=p].fmt(f)?;
+                    if self.format_str.get(p+1..=p+1) == Some("}") {
+                        pos = p + 2;
+                    } else {
+                        // FIXME! this is an error, it should be reported  ('}' must be escaped)
+                        pos = p + 1;
+                    }
+                    continue;
+                }
+
+                // Skip escaped {
+                if self.format_str.get(p+1..=p+1) == Some("{") {
+                    self.format_str[pos..=p].fmt(f)?;
+                    pos = p + 2;
+                    continue;
+                }
+
+                // Find the argument
                 let end = if let Some(end) = self.format_str[p..].find('}') {
                     end + p
                 } else {
@@ -97,15 +118,16 @@ pub mod runtime_format {
                     pos = p + 1;
                     continue;
                 };
+                let argument = self.format_str[p + 1..end].trim();
                 let pa = if p == end - 1 {
                     arg_idx += 1;
                     arg_idx - 1
-                } else if let Ok(n) = self.format_str[p + 1..end].parse::<usize>() {
+                } else if let Ok(n) = argument.parse::<usize>() {
                     n
                 } else if let Some(p) = self
                     .args
                     .iter()
-                    .position(|x| x.0 == &self.format_str[p + 1..end])
+                    .position(|x| x.0 == argument)
                 {
                     p
                 } else {
@@ -114,6 +136,8 @@ pub mod runtime_format {
                     pos = end;
                     continue;
                 };
+
+                // format the part before the '{'
                 self.format_str[pos..p].fmt(f)?;
                 if let Some(a) = self.args.get(pa) {
                     a.1.fmt(f)?;
@@ -197,6 +221,8 @@ pub mod runtime_format {
                 runtime_format!("{0} {name}!", "Hello", name = "world"),
                 "Hello world!"
             );
+
+            assert_eq!(runtime_format!("Hello {{0}} {}", "world"), "Hello {0} world");
         }
     }
 }
