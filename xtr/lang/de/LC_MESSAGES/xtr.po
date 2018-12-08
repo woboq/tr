@@ -6,24 +6,30 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-11-23 07:03+0000\n"
-"PO-Revision-Date: 2018-11-21 15:25+0100\n"
+"POT-Creation-Date: 2018-12-08 20:05+0000\n"
+"PO-Revision-Date: 2018-12-08 21:04+0100\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Lokalize 2.0\n"
 
-#: src/main.rs:73
+#: src/main.rs:83
+msgid "Extract strings from a rust crate to be translated with gettext"
+msgstr ""
+"Extrahieren Zeichenfolge aus einer Rust Crate, um sie mit gettext zu "
+"übersetzen"
+
+#: src/main.rs:89
 msgid "Use name.po for output (instead of messages.po)"
 msgstr "Ausgabe in NAME.po (anstatt in messages.po)"
 
-#: src/main.rs:80
+#: src/main.rs:96
 msgid "Write output to specified file (instead of messages.po)."
 msgstr "Ausgabe in die angegebene datei schreiben (anstatt in messages.po)"
 
 #. documentation for keywordspec goes here
-#: src/main.rs:91
+#: src/main.rs:107
 msgid ""
 "Specify keywordspec as an additional keyword to be looked for.Refer to the "
 "xgettext documentation for more info."
@@ -31,23 +37,23 @@ msgstr ""
 "Ausgabe ein zusätzliches Schlüsselwort an nach dem gesucht werden soll."
 "Weitere Informationen finden Sie in der xgettext-Dokumentation."
 
-#: src/main.rs:97
+#: src/main.rs:113
 msgid "Don’t write header with ‘msgid \"\"’ entry"
 msgstr "»msgid \"\"«-Eintrag im Kopfteil nicht erstellen"
 
-#: src/main.rs:102
+#: src/main.rs:118
 msgid "Set the copyright holder in the output."
 msgstr "Uhrheberrechtsinhaber in Ausgabe setzen"
 
-#: src/main.rs:107
+#: src/main.rs:123
 msgid "Set the package name in the header of the output."
 msgstr "Paketname für die Ausgabe setzen"
 
-#: src/main.rs:112
+#: src/main.rs:128
 msgid "Set the package version in the header of the output."
 msgstr "Paketversion in Ausgabe setzen"
 
-#: src/main.rs:118
+#: src/main.rs:134
 msgid ""
 "Set the reporting address for msgid bugs. This is the email address or URL "
 "to which the translators shall report bugs in the untranslated strings"
@@ -57,6 +63,6 @@ msgstr ""
 "sollen"
 
 #. documentation for the input
-#: src/main.rs:124
+#: src/main.rs:140
 msgid "Rust file to parse"
 msgstr "Rust-Datei zum Analysieren"

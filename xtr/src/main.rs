@@ -80,7 +80,7 @@ fn main() -> Result<(), Error> {
     let matches = App::new("xtr")
         .version(crate_version!())
         .author(crate_authors!())
-        .about(crate_description!())
+        .about(tr!("Extract strings from a rust crate to be translated with gettext").as_ref())
         .arg(
             Arg::with_name("domain")
                 .short("d")
