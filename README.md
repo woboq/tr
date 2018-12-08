@@ -23,43 +23,27 @@ There are two crates
 
 3. Use the GNU gettext tools to merge, translate, and generate the .mo files
 
-# About `xtr`
-
-## Differences with `xgettext`
-
-`xtr` is basically to be used in place of `xgettext` for Rust code.
-`xgettext` does not currently support the rust language. We can get decent result
-using the C language, but:
-
- * `xgettext` will not work properly if the code contains comments or string escaping that is
-   not compatible with Rust's rules. (Rules for comments, or string escaping are different in
-   Rust and in C. Think about raw literal, embedded comments, lifetime, ...)
-   `xtr` uses the lexer from the `proc_macro2` crate so it parse rust code.
- * `xgettext` cannot be told to extract string out of a macro, while `xtr` will ignore the `!`
-   token. So `gettext(...)` or `gettext!(...)` will work.
- * `xgettext` cannot handle the rust rules within the string literal. `xtr` will have no problem
-   with rust's raw literal or rust's escape sequence.
- * `xtr` can also parse the `mod` keyword, and easily parse all the files in a crate.
- * Finally, `xtr` can also parse the more advanced syntax within the `tr!` macro.
-
- ## Line number / comments
-
- In order to support line number and comment, `xtr` uses some unstable API from the proc_macro2
- crate. To enable it, one need to set this environment variable when compiling:
- `RUSTFLAGS='--cfg procmacro2_semver_exempt'`
-
 # About `tr!`
 
  * The name comes from Qt's `tr()` function. It is a short name since it will be placed on most
    string literal.
- * The macro can do rust-style formating. (The argument must be in the same macro so
-   a [scripting system](https://techbase.kde.org/Localization/Concepts/Transcript) can be added.)
+ * The macro can do rust-style formatting. This makes it possible to re-order the arguments in the translations.
+ * `Hello {}` or `Hello {0}` or Hello `Hello {name}` works.
  * Currently, the backend is using the [`gettext-rs`](https://crates.io/crates/gettext-rs) crate,
    but this could be changed to something like [`gettext`](https://crates.io/crates/gettext) in the future
- * Validity of the formating in the original or translation is not done yet, but could be done in the
-   future
+ * Plurals is handled by gettext, which supports the different plurals forms of several languages.
 
-# Example
+## Future plans
+
+ * Validity of the formatting in the original or translation is not done yet, but could be done in the
+   future
+ * More advanced formatting that would allow for gender or case can be done as an extension to the
+   formatting rules. Since the macro takes the arguments directly, it will be possible to extend the
+   formatting engine with a [scripting system](https://techbase.kde.org/Localization/Concepts/Transcript)
+   or something like ICU MessageFormat.
+ * Formatting date/number in a localized fashion.
+
+## Example
 
 ```Rust
 #[macro_use]
@@ -89,6 +73,43 @@ fn main() {
 }
 ```
 
+# About `xtr`
+
+`xtr` is a tool that extract translated strings from the source code of a rust crate.
+The tool is supposed to be compatible with any gettext based functions. But support for the
+special syntax of the tr! macro has been added.
+
+## Usage
+
+```
+xtr src/main.rs -o example.pot
+```
+
+This will extract the stirngs from all the modules of the crate, and create a file `example.pot`.
+You can now use the gettext tools to translate this file.
+
+## Differences with `xgettext`
+
+`xtr` is basically to be used in place of `xgettext` for Rust code.
+`xgettext` does not currently support the rust language. We can get decent result
+using the C language, but:
+
+ * `xgettext` will not work properly if the code contains comments or string escaping that is
+   not compatible with Rust's rules. (Rules for comments, or string escaping are different in
+   Rust and in C. Think about raw literal, embedded comments, lifetime, ...)
+   `xtr` uses the lexer from the `proc_macro2` crate so it parse rust code.
+ * `xgettext` cannot be told to extract string out of a macro, while `xtr` will ignore the `!`
+   token. So `gettext(...)` or `gettext!(...)` will work.
+ * `xgettext` cannot handle the rust rules within the string literal. `xtr` will have no problem
+   with rust's raw literal or rust's escape sequence.
+ * `xtr` can also parse the `mod` keyword, and easily parse all the files in a crate.
+ * Finally, `xtr` can also parse the more advanced syntax within the `tr!` macro.
+
+ ## Line number / comments
+
+ In order to support line number and comment, `xtr` uses some unstable API from the proc_macro2
+ crate. To enable it, one need to set this environment variable when compiling:
+ `RUSTFLAGS='--cfg procmacro2_semver_exempt'`
 
 # Licence
 
@@ -101,5 +122,10 @@ fn main() {
 
 Contributions are welcome. Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion
 in this crate by you, should be licensed under the MIT license.
+
+## Request for feedback
+
+Please fill your suggestions as issues. Or help by commenting on https://github.com/woboq/tr/issues/1
+
 
 
