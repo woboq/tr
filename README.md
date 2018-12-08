@@ -29,8 +29,8 @@ There are two crates
    string literal.
  * The macro can do rust-style formatting. This makes it possible to re-order the arguments in the translations.
  * `Hello {}` or `Hello {0}` or Hello `Hello {name}` works.
- * Currently, the backend is using the [`gettext-rs`](https://crates.io/crates/gettext-rs) crate,
-   but this could be changed to something like [`gettext`](https://crates.io/crates/gettext) in the future
+ * Currently, the default backend is using the [`gettext-rs`](https://crates.io/crates/gettext-rs) crate,
+   but this could be changed to [`gettext`](https://crates.io/crates/gettext) in the future.
  * Plurals is handled by gettext, which supports the different plurals forms of several languages.
 
 ## Future plans

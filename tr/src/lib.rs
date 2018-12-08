@@ -47,7 +47,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //!                                 folder, e));
 //!         }
 //!         Ok(r) => {
-//!             // Singlular/plural formating
+//!             // Singular/plural formating
 //!             println!("{}", tr!(
 //!                 "The directory {} has one file" | "The directory {} has {n} files" % r.count(),
 //!                 folder
@@ -59,6 +59,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //!
 
 extern crate gettextrs;
+
+#[macro_use]
+extern crate lazy_static;
+
+#[cfg(feature = "gettext")]
+extern crate gettext;
+
+use std::borrow::Cow;
 
 #[doc(hidden)]
 pub mod runtime_format {
@@ -218,59 +226,121 @@ pub mod runtime_format {
                 "Hello world!"
             );
 
-            assert_eq!(runtime_format!("Hello {{0}} {}", "world"), "Hello {0} world");
+            assert_eq!(
+                runtime_format!("Hello {{0}} {}", "world"),
+                "Hello {0} world"
+            );
         }
     }
+}
+
+/// This trait can be implemented by object that can provide a backend for the translation
+///
+/// The backend is only responsable to provide a matching string, the formatting is done
+/// using this string.
+///
+/// The translator for a crate can be set with the set_translator! macro
+pub trait Translator: Send + Sync {
+    fn translate<'a>(&'a self, string: &'a str, context: Option<&'a str>) -> Cow<'a, str>;
+    fn ntranslate<'a>(
+        &'a self,
+        n: u64,
+        singular: &'a str,
+        plural: &'a str,
+        context: Option<&'a str>,
+    ) -> Cow<'a, str>;
 }
 
 #[doc(hidden)]
 pub mod internal {
 
-    fn domain_from_module(module: &str) -> &str {
-        module.split("::").next().unwrap_or("")
+    use super::Translator;
+    use std::{borrow::Cow, collections::HashMap, sync::RwLock};
+
+    // TODO: use parking_lot::RwLock
+    lazy_static! {
+        static ref TRANSLATORS: RwLock<HashMap<&'static str, Box<Translator>>> =
+            { Default::default() };
     }
 
-    fn mangle_context(ctx: &'static str, s: &'static str) -> String {
+    pub fn with_translator<T>(module: &'static str, func: impl FnOnce(&Translator) -> T) -> T {
+        let domain = domain_from_module(module);
+        let def = DefaultTranslator(domain);
+        func(
+            TRANSLATORS
+                .read()
+                .unwrap()
+                .get(domain)
+                .map(|x| &**x)
+                .unwrap_or(&def),
+        )
+    }
+
+    fn domain_from_module(module: &str) -> &str {
+        module.split("::").next().unwrap_or(module)
+    }
+
+    fn mangle_context(ctx: &str, s: &str) -> String {
         format!("{}\u{4}{}", ctx, s)
     }
     fn demangle_context(r: String) -> String {
-        if let Some(x) = r.split("\u{4}").last() {
+        if let Some(x) = r.split('\u{4}').last() {
             return x.to_owned();
         }
         r
     }
 
-    pub fn gettext(module: &'static str, s: &'static str) -> String {
-        gettextrs::dgettext(domain_from_module(module), s)
+    struct DefaultTranslator(&'static str);
+
+    #[cfg(feature = "gettext-rs")]
+    impl Translator for DefaultTranslator {
+        fn translate<'a>(&'a self, string: &'a str, context: Option<&'a str>) -> Cow<'a, str> {
+            Cow::Owned(if let Some(ctx) = context {
+                demangle_context(gettextrs::dgettext(self.0, &mangle_context(ctx, string)))
+            } else {
+                gettextrs::dgettext(self.0, string)
+            })
+        }
+
+        fn ntranslate<'a>(
+            &'a self,
+            n: u64,
+            singular: &'a str,
+            plural: &'a str,
+            context: Option<&'a str>,
+        ) -> Cow<'a, str> {
+            let n = n as u32;
+            Cow::Owned(if let Some(ctx) = context {
+                demangle_context(gettextrs::dngettext(
+                    self.0,
+                    &mangle_context(ctx, singular),
+                    &mangle_context(ctx, plural),
+                    n,
+                ))
+            } else {
+                gettextrs::dngettext(self.0, singular, plural, n)
+            })
+        }
     }
-    pub fn gettext_ctx(module: &'static str, ctx: &'static str, s: &'static str) -> String {
-        demangle_context(gettextrs::dgettext(
-            domain_from_module(module),
-            &mangle_context(ctx, s),
-        ))
+
+    #[cfg(not(feature = "gettext-rs"))]
+    impl Translator for DefaultTranslator {
+        fn translate<'a>(&'a self, string: &'a str, context: Option<&'a str>) -> Cow<'a, str> {
+            Cow::Borrowed(string)
+        }
+
+        fn ntranslate<'a>(
+            &'a self,
+            n: u64,
+            singular: &'a str,
+            plural: &'a str,
+            context: Option<&'a str>,
+        ) -> Cow<'a, str> {
+            Cow::Borrowed(if n == 1 { string } else { plural })
+        }
     }
-    pub fn ngettext(
-        module: &'static str,
-        singular: &'static str,
-        plural: &'static str,
-        n: u32,
-    ) -> String {
-        gettextrs::dngettext(domain_from_module(module), singular, plural, n)
-    }
-    pub fn ngettext_ctx(
-        module: &'static str,
-        ctx: &'static str,
-        singular: &'static str,
-        plural: &'static str,
-        n: u32,
-    ) -> String {
-        demangle_context(gettextrs::dngettext(
-            domain_from_module(module),
-            &mangle_context(ctx, singular),
-            &mangle_context(ctx, plural),
-            n,
-        ))
-    }
+
+    #[cfg(feature = "gettext-rs")]
     pub fn init<T: Into<Vec<u8>>>(module: &'static str, dir: T) {
         gettextrs::bindtextdomain::<Vec<u8>>(domain_from_module(module).into(), dir.into());
 
@@ -280,6 +350,12 @@ pub mod internal {
         });
     }
 
+    pub fn set_translator(module: &'static str, translator: impl Translator + 'static) {
+        TRANSLATORS
+            .write()
+            .unwrap()
+            .insert(module, Box::new(translator));
+    }
 }
 
 /// Macro used to translate a string.
@@ -338,39 +414,56 @@ pub mod internal {
 #[macro_export]
 macro_rules! tr {
     ($msgid:tt, $($tail:tt)* ) => {
-        $crate::runtime_format!($crate::internal::gettext(module_path!(), $msgid), $($tail)*)
+        $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
+            t.translate($msgid, None), $($tail)*))
     };
     ($msgid:tt) => {
-        $crate::runtime_format!($crate::internal::gettext(module_path!(), $msgid))
+        $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
+            t.translate($msgid, None)))
     };
+
     ($msgctx:tt => $msgid:tt, $($tail:tt)* ) => {
-         $crate::runtime_format!($crate::internal::gettext_ctx(module_path!(), $msgctx, $msgid), $($tail)*)
+         $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
+            t.translate($msgid, Some($msgctx)), $($tail)*))
     };
+    ($msgctx:tt => $msgid:tt) => {
+        $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
+            t.translate($msgid, Some($msgctx))))
+    };
+
     ($msgid:tt | $plur:tt % $n:expr, $($tail:tt)* ) => {{
         let n = $n;
-        $crate::runtime_format!($crate::internal::ngettext(module_path!(), $msgid, $plur, n as u32), $($tail)*, n=n)
+        $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
+            t.ntranslate(n as u64, $msgid, $plur, None), $($tail)*, n=n))
     }};
-    ($msgctx:tt => $msgid:tt | $plur:tt % $n:expr, $($tail:tt)* ) => {{
-         let n = $n;
-         $crate::runtime_format!($crate::internal::ngettext_ctx(module_path!(), $msgctx, $msgid, $plur, $n), $($tail)*, n)
-    }};
-
-    ($msgctx:tt => $msgid:tt) => {
-         $crate::runtime_format!($crate::internal::gettext_ctx(module_path!(), $msgctx, $msgid))
-    };
     ($msgid:tt | $plur:tt % $n:expr) => {{
         let n = $n;
-        $crate::runtime_format!($crate::internal::ngettext(module_path!(), $msgid, $plur, n as u32), n)
+        $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
+            t.ntranslate(n as u64, $msgid, $plur, None), n))
+
+    }};
+
+    ($msgctx:tt => $msgid:tt | $plur:tt % $n:expr, $($tail:tt)* ) => {{
+         let n = $n;
+         $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
+            t.ntranslate(n as u64, $msgid, $plur, Some($msgctx)), $($tail)*, n=n))
     }};
     ($msgctx:tt => $msgid:tt | $plur:tt % $n:expr) => {{
-        let n = $n;
-        $crate::runtime_format!($crate::internal::ngettext_ctx(module_path!(), $msgctx, $msgid, $plur, n as u32), n)
+         let n = $n;
+         $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
+            t.ntranslate(n as u64, $msgid, $plur, Some($msgctx)), n))
     }};
 }
 
-/// Initialize the translation for a crate.
+/// Initialize the translation for a crate, using gettext's bindtextdomain
 ///
-/// The macro must be called to specify the path in which the .mo files can be looked for.
+/// The macro should be called to specify the path in which the .mo files can be looked for.
+/// The argument is the string passed to bindtextdomain
+///
+/// The alternative is to call the set_translator! macro
+///
+/// This macro is available only if the feature "gettext-rs" is enabled
+#[cfg(feature = "gettext-rs")]
 #[macro_export]
 macro_rules! tr_init {
     ($path:expr) => {
@@ -378,10 +471,53 @@ macro_rules! tr_init {
     };
 }
 
+/// Set the translator to be used for this crate.
+///
+/// The argument needs to be something implementing the Translator trait
+///
+/// For example, using the gettext crate (if the gettext feature is enabled)
+/// ```ignore
+/// let f = File::open("french.mo").expect("could not open the catalog");
+/// let catalog = Catalog::parse(f).expect("could not parse the catalog");
+/// set_translator!(catalog);
+/// ```
+#[macro_export]
+macro_rules! set_translator {
+    ($translator:expr) => {
+        $crate::internal::set_translator(module_path!(), $translator)
+    };
+}
+
+#[cfg(feature = "gettext")]
+impl Translator for gettext::Catalog {
+    fn translate<'a>(&'a self, string: &'a str, context: Option<&'a str>) -> Cow<'a, str> {
+        Cow::Borrowed(if let Some(ctx) = context {
+            self.pgettext(ctx, string)
+        } else {
+            self.gettext(string)
+        })
+    }
+    fn ntranslate<'a>(
+        &'a self,
+        n: u64,
+        singular: &'a str,
+        plural: &'a str,
+        context: Option<&'a str>,
+    ) -> Cow<'a, str> {
+        Cow::Borrowed(if let Some(ctx) = context {
+            self.npgettext(ctx, singular, plural, n)
+        } else {
+            self.ngettext(singular, plural, n)
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
     fn it_works() {
+        assert_eq!(tr!("Hello"), "Hello");
+        assert_eq!(tr!("ctx" => "Hello"), "Hello");
         assert_eq!(tr!("Hello {}", "world"), "Hello world");
         assert_eq!(tr!("ctx" => "Hello {}", "world"), "Hello world");
 
