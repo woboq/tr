@@ -87,7 +87,8 @@ fn main() -> Result<(), Error> {
                 .long("default-domain")
                 .value_name("domain")
                 .help(&tr!("Use name.po for output (instead of messages.po)")),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("OUTPUT")
                 .short("o")
                 .long("output")
@@ -95,7 +96,8 @@ fn main() -> Result<(), Error> {
                 .help(&tr!(
                     "Write output to specified file (instead of messages.po)."
                 )),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("KEYWORDS")
                 .short("k")
                 .long("keyword")
@@ -107,26 +109,31 @@ fn main() -> Result<(), Error> {
                     "Specify keywordspec as an additional keyword to be looked for.\
                      Refer to the xgettext documentation for more info."
                 )),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("omit-header")
                 .long("omit-header")
                 .help(&tr!(r#"Don’t write header with ‘msgid ""’ entry"#)),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("copyright-holder")
                 .long("copyright-holder")
                 .value_name("string")
                 .help(&tr!("Set the copyright holder in the output.")),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("package-name")
                 .long("package-name")
                 .value_name("package")
                 .help(&tr!("Set the package name in the header of the output.")),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("package-version")
                 .long("package-version")
                 .value_name("version")
                 .help(&tr!("Set the package version in the header of the output.")),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("msgid-bugs-address")
                 .long("msgid-bugs-address")
                 .value_name("email@address")
@@ -134,13 +141,15 @@ fn main() -> Result<(), Error> {
                     "Set the reporting address for msgid bugs. This is the email address \
                      or URL to which the translators shall report bugs in the untranslated strings"
                 )),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("INPUT")
                 // documentation for the input
                 .help(&tr!("Rust file to parse"))
                 .required(true)
                 .index(1),
-        ).get_matches();
+        )
+        .get_matches();
 
     let keywords = matches
         .values_of("KEYWORDS")
@@ -177,7 +186,8 @@ fn main() -> Result<(), Error> {
                     }
                     SpecArg::MsgId(d.parse().expect("invalid keyword spec"))
                     // TODO: comment or argnum
-                }).collect();
+                })
+                .collect();
             specs.insert(
                 name.to_owned(),
                 Spec {

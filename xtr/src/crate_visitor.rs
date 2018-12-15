@@ -102,9 +102,7 @@ where
                     ident: ref id,
                     lit: syn::Lit::Str(ref s),
                     ..
-                }))
-                    if id == "path" =>
-                {
+                })) if id == "path" => {
                     let mod_path = self.mod_dir.join(&s.value());
                     return self
                         .parse_mod(mod_path)

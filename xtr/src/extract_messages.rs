@@ -241,7 +241,8 @@ fn test_extract_messages() {
                     .map(|l| Location {
                         file: "myfile.rs".to_owned().into(),
                         line: *l,
-                    }).collect(),
+                    })
+                    .collect(),
                 opt(co),
             )
         } else {
@@ -324,9 +325,9 @@ fn test_extract_messages() {
             },
         ),
     ]
-        .iter()
-        .cloned()
-        .collect();
+    .iter()
+    .cloned()
+    .collect();
 
     let mut results = HashMap::new();
 
