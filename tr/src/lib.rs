@@ -34,6 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //! extern crate tr;
 //! fn main() {
 //!     // use the tr_init macro to tell gettext where to look for translations
+//! #   #[cfg(feature = "gettext-rs")]
 //!     tr_init!("/usr/share/locale/");
 //!     let folder = if let Some(folder) = std::env::args().nth(1) {
 //!         folder
@@ -67,16 +68,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //!   `gettext::Catalog` object
 //!
 
-
-#[macro_use]
-extern crate lazy_static;
-
-#[cfg(feature = "gettext-rs")]
-extern crate gettextrs;
-
-#[cfg(feature = "gettext")]
-extern crate gettext;
-
 use std::borrow::Cow;
 
 #[doc(hidden)]
@@ -100,7 +91,7 @@ pub mod runtime_format {
     }
 
     impl<'a> ::std::fmt::Display for FormatArg<'a> {
-        fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
             let mut arg_idx = 0;
             let mut pos = 0;
             while let Some(mut p) = self.format_str[pos..].find(|x| x == '{' || x == '}') {
@@ -269,7 +260,7 @@ pub mod internal {
     use std::{borrow::Cow, collections::HashMap, sync::RwLock};
 
     // TODO: use parking_lot::RwLock
-    lazy_static! {
+    lazy_static::lazy_static! {
         static ref TRANSLATORS: RwLock<HashMap<&'static str, Box<dyn Translator>>> =
             { Default::default() };
     }

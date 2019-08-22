@@ -14,14 +14,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-extern crate proc_macro2;
-extern crate syn;
-#[macro_use]
-extern crate clap;
-extern crate failure;
-#[macro_use]
-extern crate tr;
-extern crate chrono;
+use syn;
+
+use tr::{tr, tr_init};
 
 use clap::{App, Arg};
 use failure::Error;
@@ -78,8 +73,8 @@ fn main() -> Result<(), Error> {
 
     // The options are made to be compatible with xgetext options
     let matches = App::new("xtr")
-        .version(crate_version!())
-        .author(crate_authors!())
+        .version(clap::crate_version!())
+        .author(clap::crate_authors!())
         .about(tr!("Extract strings from a rust crate to be translated with gettext").as_ref())
         .arg(
             Arg::with_name("domain")
