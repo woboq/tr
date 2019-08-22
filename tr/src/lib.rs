@@ -57,11 +57,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //! }
 //! ```
 //!
+//! # Optional Features
+//!
+//! You can change which crate is used as a backend for the translation by setting the features
+//!
+//! - **`gettext-rs`** *(enabled by default)* - This crate wraps the gettext C library
+//! - **`gettext`** - A rust re-implementation of gettext. That crate does not take care of loading the
+//!   right .mo files, so one must use the (`set_translator!`)[macro.set_translator.html] macro with a
+//!   `gettext::Catalog` object
+//!
 
-extern crate gettextrs;
 
 #[macro_use]
 extern crate lazy_static;
+
+#[cfg(feature = "gettext-rs")]
+extern crate gettextrs;
 
 #[cfg(feature = "gettext")]
 extern crate gettext;
@@ -85,7 +96,7 @@ pub mod runtime_format {
         #[doc(hidden)]
         pub format_str: &'a str,
         #[doc(hidden)]
-        pub args: &'a [(&'static str, &'a ::std::fmt::Display)],
+        pub args: &'a [(&'static str, &'a dyn (::std::fmt::Display))],
     }
 
     impl<'a> ::std::fmt::Display for FormatArg<'a> {
@@ -259,11 +270,11 @@ pub mod internal {
 
     // TODO: use parking_lot::RwLock
     lazy_static! {
-        static ref TRANSLATORS: RwLock<HashMap<&'static str, Box<Translator>>> =
+        static ref TRANSLATORS: RwLock<HashMap<&'static str, Box<dyn Translator>>> =
             { Default::default() };
     }
 
-    pub fn with_translator<T>(module: &'static str, func: impl FnOnce(&Translator) -> T) -> T {
+    pub fn with_translator<T>(module: &'static str, func: impl FnOnce(&dyn Translator) -> T) -> T {
         let domain = domain_from_module(module);
         let def = DefaultTranslator(domain);
         func(
@@ -280,9 +291,11 @@ pub mod internal {
         module.split("::").next().unwrap_or(module)
     }
 
+    #[cfg(feature = "gettext-rs")]
     fn mangle_context(ctx: &str, s: &str) -> String {
         format!("{}\u{4}{}", ctx, s)
     }
+    #[cfg(feature = "gettext-rs")]
     fn demangle_context(r: String) -> String {
         if let Some(x) = r.split('\u{4}').last() {
             return x.to_owned();
@@ -325,7 +338,7 @@ pub mod internal {
 
     #[cfg(not(feature = "gettext-rs"))]
     impl Translator for DefaultTranslator {
-        fn translate<'a>(&'a self, string: &'a str, context: Option<&'a str>) -> Cow<'a, str> {
+        fn translate<'a>(&'a self, string: &'a str, _context: Option<&'a str>) -> Cow<'a, str> {
             Cow::Borrowed(string)
         }
 
@@ -334,9 +347,9 @@ pub mod internal {
             n: u64,
             singular: &'a str,
             plural: &'a str,
-            context: Option<&'a str>,
+            _context: Option<&'a str>,
         ) -> Cow<'a, str> {
-            Cow::Borrowed(if n == 1 { string } else { plural })
+            Cow::Borrowed(if n == 1 { singular } else { plural })
         }
     }
 
