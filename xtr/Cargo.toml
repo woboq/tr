@@ -13,10 +13,10 @@ edition = "2018"
 
 
 [dependencies]
-proc-macro2 = "0.4.24"
+proc-macro2 = "1"
 # syn is used in crate_visitor.rs to parse a file and visit the `mod` location.
 # It is also used in extract_message.rs to parse the literals into their string representation
-syn = { version = "0.15.20", features=["full", "visit", "extra-traits"] }
+syn = { version = "1", features=["full", "visit", "extra-traits"] }
 clap = "2.32"
 tr = { path="../tr", version = "0.1" }
 failure = "0.1.3"
