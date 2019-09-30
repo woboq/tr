@@ -140,9 +140,9 @@ fn main() -> Result<(), Error> {
         .arg(
             Arg::with_name("INPUT")
                 // documentation for the input
-                .help(&tr!("Rust file to parse"))
+                .help(&tr!("Main rust files to parse (will recurse into modules)"))
                 .required(true)
-                .index(1),
+                .multiple(true)
         )
         .get_matches();
 
@@ -198,18 +198,21 @@ fn main() -> Result<(), Error> {
 
     let mut results = HashMap::new();
 
-    crate_visitor::visit_crate(
-        matches.value_of("INPUT").expect("Missing crate root"),
-        |path, source, file| {
-            extract_messages::extract_messages(
-                &mut results,
-                &specs,
-                file.into_token_stream(),
-                source,
-                path,
-            )
-        },
-    )?;
+    let inputs = matches.values_of("INPUT").expect("Missing crate root");
+    for i in inputs {
+        crate_visitor::visit_crate(
+            i,
+            |path, source, file| {
+                extract_messages::extract_messages(
+                    &mut results,
+                    &specs,
+                    file.into_token_stream(),
+                    source,
+                    path,
+                )
+            },
+        )?;
+    }
 
     let od = OutputDetails {
         omit_header: matches.is_present("omit-header"),
