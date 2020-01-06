@@ -13,7 +13,7 @@ edition = "2018"
 
 
 [dependencies]
-proc-macro2 = "1"
+proc-macro2 = { version = "1", features = ["span-locations"] }
 # syn is used in crate_visitor.rs to parse a file and visit the `mod` location.
 # It is also used in extract_message.rs to parse the literals into their string representation
 syn = { version = "1", features=["full", "visit", "extra-traits"] }

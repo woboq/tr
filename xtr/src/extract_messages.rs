@@ -37,11 +37,7 @@ pub fn extract_messages(
 }
 
 fn split_lines(source: &str) -> Vec<&str> {
-    if cfg!(procmacro2_semver_exempt) {
-        source.split('\n').collect()
-    } else {
-        Vec::new()
-    }
+    source.split('\n').collect()
 }
 
 #[allow(dead_code)]
@@ -185,7 +181,6 @@ impl<'a> Extractor<'a> {
                 }
 
                 // Extract the location and the comments from lit and merge it into message
-                #[cfg(procmacro2_semver_exempt)]
                 {
                     let span = lit.span();
                     let mut line = span.start().line;
@@ -235,25 +230,13 @@ fn test_extract_messages() {
                 Some(x.to_owned())
             }
         };
-        let (locations, comments) = if cfg!(procmacro2_semver_exempt) {
-            (
-                loc.iter()
-                    .map(|l| Location {
-                        file: "myfile.rs".to_owned().into(),
-                        line: *l,
-                    })
-                    .collect(),
-                opt(co),
-            )
-        } else {
-            (Vec::new(), None)
-        };
+        let locations = loc.iter().map(|l| Location { file: "myfile.rs".to_owned().into(), line: *l, }).collect();
         Message {
             msgctxt: opt(ctx),
             msgid: msg.into(),
             plural: opt(p),
             locations,
-            comments,
+            comments: opt(co),
             index: 0,
         }
     }

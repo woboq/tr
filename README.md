@@ -105,12 +105,6 @@ using the C language, but:
  * `xtr` can also parse the `mod` keyword, and easily parse all the files in a crate.
  * Finally, `xtr` can also parse the more advanced syntax within the `tr!` macro.
 
- ## Line number / comments
-
- In order to support line number and comment, `xtr` uses some unstable API from the proc_macro2
- crate. To enable it, one need to set this environment variable when compiling:
- `RUSTFLAGS='--cfg procmacro2_semver_exempt'`
-
 # Licence
 
  * The `tr` crate is licensed under the [MIT](https://opensource.org/licenses/MIT) license.

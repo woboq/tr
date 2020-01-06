@@ -3,9 +3,6 @@ rust:
 - stable
 - beta
 - nightly
-env:
-- RUSTFLAGS=
-- RUSTFLAGS="--cfg procmacro2_semver_exempt"
 script:
 - cargo test
 - cargo run xtr --help
