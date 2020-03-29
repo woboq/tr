@@ -66,6 +66,7 @@ pub struct OutputDetails {
     package_name: Option<String>,
     package_version: Option<String>,
     bugs_address: Option<String>,
+    charset: String,
 }
 
 fn main() -> Result<(), Error> {
@@ -135,6 +136,16 @@ fn main() -> Result<(), Error> {
                 .help(&tr!(
                     "Set the reporting address for msgid bugs. This is the email address \
                      or URL to which the translators shall report bugs in the untranslated strings"
+                )),
+        )
+        .arg(
+            Arg::with_name("charset")
+                .short("c")
+                .long("charset")
+                .value_name("encoding")
+                .default_value("UTF-8")
+                .help(&tr!(
+                    "The encoding used for the characters in the POT file's locale."
                 )),
         )
         .arg(
@@ -220,6 +231,9 @@ fn main() -> Result<(), Error> {
         package_name: matches.value_of("package-name").map(str::to_owned),
         package_version: matches.value_of("package-version").map(str::to_owned),
         bugs_address: matches.value_of("msgid-bugs-address").map(str::to_owned),
+        charset: matches.value_of("charset")
+            .expect("expected charset to have a default value")
+            .to_owned(),
     };
 
     let mut messages: Vec<_> = results.values().collect();

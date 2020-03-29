@@ -50,7 +50,7 @@ msgstr ""
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset={charset}\n"
 "Content-Transfer-Encoding: 8bit\n"
 "#,
             package = package,
@@ -64,6 +64,7 @@ msgstr ""
                 .unwrap_or_else(|| format!("THE {}'S COPYRIGHT HOLDER", package)),
             date = Utc::now().format("%Y-%m-%d %H:%M%z").to_string(),
             address = output_details.bugs_address.unwrap_or_default(),
+            charset = output_details.charset,
         )?;
     }
 
