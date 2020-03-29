@@ -230,7 +230,13 @@ fn test_extract_messages() {
                 Some(x.to_owned())
             }
         };
-        let locations = loc.iter().map(|l| Location { file: "myfile.rs".to_owned().into(), line: *l, }).collect();
+        let locations = loc
+            .iter()
+            .map(|l| Location {
+                file: "myfile.rs".to_owned().into(),
+                line: *l,
+            })
+            .collect();
         Message {
             msgctxt: opt(ctx),
             msgid: msg.into(),

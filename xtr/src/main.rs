@@ -153,7 +153,7 @@ fn main() -> Result<(), Error> {
                 // documentation for the input
                 .help(&tr!("Main rust files to parse (will recurse into modules)"))
                 .required(true)
-                .multiple(true)
+                .multiple(true),
         )
         .get_matches();
 
@@ -211,18 +211,15 @@ fn main() -> Result<(), Error> {
 
     let inputs = matches.values_of("INPUT").expect("Missing crate root");
     for i in inputs {
-        crate_visitor::visit_crate(
-            i,
-            |path, source, file| {
-                extract_messages::extract_messages(
-                    &mut results,
-                    &specs,
-                    file.into_token_stream(),
-                    source,
-                    path,
-                )
-            },
-        )?;
+        crate_visitor::visit_crate(i, |path, source, file| {
+            extract_messages::extract_messages(
+                &mut results,
+                &specs,
+                file.into_token_stream(),
+                source,
+                path,
+            )
+        })?;
     }
 
     let od = OutputDetails {
@@ -231,7 +228,8 @@ fn main() -> Result<(), Error> {
         package_name: matches.value_of("package-name").map(str::to_owned),
         package_version: matches.value_of("package-version").map(str::to_owned),
         bugs_address: matches.value_of("msgid-bugs-address").map(str::to_owned),
-        charset: matches.value_of("charset")
+        charset: matches
+            .value_of("charset")
             .expect("expected charset to have a default value")
             .to_owned(),
     };
