@@ -16,7 +16,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use super::{Message, MessageKey, Spec, SpecArg};
 use failure::Error;
-use proc_macro2::{TokenStream, TokenTree};
+use proc_macro2::{Span, TokenStream, TokenTree};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -70,7 +70,7 @@ impl<'a> Extractor<'a> {
                         }
 
                         if let Some(TokenTree::Group(group)) = token_iter.peek() {
-                            self.found_string(spec, group.stream());
+                            self.found_string(spec, group.stream(), ident.span());
                         }
                     }
                 }
@@ -80,7 +80,7 @@ impl<'a> Extractor<'a> {
         Ok(())
     }
 
-    fn found_string(&mut self, spec: &Spec, stream: TokenStream) {
+    fn found_string(&mut self, spec: &Spec, stream: TokenStream, ident_span: Span) {
         let mut token_iter = stream.into_iter().peekable();
 
         let mut msgctxt: Option<String> = None;
@@ -183,7 +183,7 @@ impl<'a> Extractor<'a> {
                 // Extract the location and the comments from lit and merge it into message
                 {
                     let span = lit.span();
-                    let mut line = span.start().line;
+                    let line = span.start().line;
                     if line > 0 {
                         message.locations.push(super::Location {
                             file: self.path.clone(),
@@ -191,21 +191,14 @@ impl<'a> Extractor<'a> {
                         });
                     }
 
-                    line -= 1;
-                    while line > 1 {
-                        line -= 1;
-                        let line_str = self.source_lines.get(line).unwrap().trim();
-                        if line_str.starts_with("//") {
-                            let line_str = line_str.trim_start_matches('/').trim_start();
-                            message.comments = if let Some(ref string) = message.comments {
-                                Some(format!("{}\n{}", line_str, string))
-                            } else {
-                                Some(line_str.to_owned())
-                            }
-                        } else {
-                            break;
+                    let mut comments = get_comment_before_line(&self.source_lines, line);
+                    if comments.is_none() {
+                        let ident_line = ident_span.start().line;
+                        if ident_line != line {
+                            comments = get_comment_before_line(&self.source_lines, ident_line);
                         }
                     }
+                    message.comments = comments;
                 }
             }
         }
@@ -217,6 +210,26 @@ fn literal_to_string(lit: &proc_macro2::Literal) -> Option<String> {
         Ok(lit) => Some(lit.value()),
         Err(_) => None,
     }
+}
+
+fn get_comment_before_line(source_lines: &Vec<&str>, mut line: usize) -> Option<String> {
+    let mut result = None;
+    line -= 1;
+    while line > 1 {
+        line -= 1;
+        let line_str = source_lines.get(line).unwrap().trim();
+        if line_str.starts_with("//") {
+            let line_str = line_str.trim_start_matches('/').trim_start();
+            result = if let Some(ref string) = result {
+                Some(format!("{}\n{}", line_str, string))
+            } else {
+                Some(line_str.to_owned())
+            }
+        } else {
+            break;
+        }
+    }
+    result
 }
 
 #[test]
@@ -280,6 +293,12 @@ fn test_extract_messages() {
         let d = tr!("ctx" => "dup1");
         let d = tr!("dup1");
         let d = tr!("ctx" => "dup1");
+
+        // macro and string on different line
+        let x = tr!(
+            "x"
+        );
+
     }"##;
 
     let r = vec![
@@ -295,6 +314,7 @@ fn test_extract_messages() {
         make("multi-line second line", "", "", "multi line", &[26]),
         make("dup1", "", "", "", &[30, 32]),
         make("dup1", "", "ctx", "", &[31, 33]),
+        make("x", "", "", "macro and string on different line", &[37]),
     ];
 
     let specs = [
