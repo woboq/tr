@@ -15,7 +15,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use super::{Message, MessageKey, Spec, SpecArg};
-use failure::Error;
+use anyhow::Error;
 use proc_macro2::{Span, TokenStream, TokenTree};
 use std::collections::HashMap;
 use std::path::PathBuf;

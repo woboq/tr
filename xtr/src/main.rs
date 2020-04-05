@@ -18,8 +18,8 @@ use syn;
 
 use tr::{tr, tr_init};
 
+use anyhow::Error;
 use clap::{App, Arg};
-use failure::Error;
 use std::collections::HashMap;
 use syn::export::ToTokens;
 
