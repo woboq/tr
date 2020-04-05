@@ -348,7 +348,7 @@ pub mod internal {
     pub fn init<T: Into<Vec<u8>>>(module: &'static str, dir: T) {
         gettextrs::bindtextdomain::<Vec<u8>>(domain_from_module(module).into(), dir.into());
 
-        static START: std::sync::Once = std::sync::ONCE_INIT;
+        static START: std::sync::Once = std::sync::Once::new();
         START.call_once(|| {
             gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "");
         });
