@@ -174,7 +174,6 @@ fn main() -> Result<(), Error> {
         )
         .arg(
             Arg::with_name("charset")
-                .short("c")
                 .long("charset")
                 .value_name("encoding")
                 .default_value("UTF-8")
