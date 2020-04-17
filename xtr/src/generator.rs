@@ -14,7 +14,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use super::{Message, OutputDetails};
+use super::{AddLocation, Message, OutputDetails};
 use chrono::prelude::*;
 use std::io::prelude::*;
 use std::path::Path;
@@ -75,10 +75,21 @@ msgstr ""
                 writeln!(output, "#. {}", c)?;
             }
         }
-        if !m.locations.is_empty() {
+        if !m.locations.is_empty() && (output_details.add_location != AddLocation::Never) {
             write!(output, "#:")?;
             for l in &m.locations {
-                write!(output, " {}:{}", l.file.to_string_lossy(), l.line)?;
+                match output_details.add_location {
+                    AddLocation::Full => {
+                        write!(output, " {}:{}", l.file.to_string_lossy(), l.line)?;
+                    }
+                    AddLocation::File => {
+                        write!(output, " {}", l.file.to_string_lossy())?;
+                    }
+                    _ => panic!(format!(
+                        "unsupported add-location option {0:?}",
+                        output_details.add_location
+                    )),
+                }
             }
             writeln!(output)?;
         }
