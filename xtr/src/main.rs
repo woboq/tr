@@ -18,9 +18,10 @@ use syn;
 
 use tr::{tr, tr_init};
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use clap::{App, Arg};
 use std::collections::HashMap;
+use std::str::FromStr;
 use syn::export::ToTokens;
 
 mod crate_visitor;
@@ -60,6 +61,38 @@ pub struct Message {
     index: usize,
 }
 
+/// How much [Message](Message) location information to include in the
+/// output.
+#[derive(PartialEq, Debug)]
+pub enum AddLocation {
+    /// Format the locations output as ‘#: filename:line’
+    /// This is the default.
+    Full,
+    /// Format the locations output as ‘#: filename`
+    File,
+    /// Don't include the message locations.
+    Never,
+}
+
+impl FromStr for AddLocation {
+    type Err = anyhow::Error;
+
+    /// Create an [AddLocation](AddLocation) from a &str. Valid inputs
+    /// are: "full", "file" or "never".
+    fn from_str(s: &str) -> Result<AddLocation, Self::Err> {
+        match s {
+            "full" => Ok(AddLocation::Full),
+            "file" => Ok(AddLocation::File),
+            "never" => Ok(AddLocation::Never),
+            _ => Err(anyhow!(
+                "\"{0}\" is not a valid --add-location option. Valid \
+                    options are \"full\", \"file\" or \"never\".",
+                s
+            )),
+        }
+    }
+}
+
 pub struct OutputDetails {
     omit_header: bool,
     copyright_holder: Option<String>,
@@ -67,6 +100,7 @@ pub struct OutputDetails {
     package_version: Option<String>,
     bugs_address: Option<String>,
     charset: String,
+    add_location: AddLocation,
 }
 
 fn main() -> Result<(), Error> {
@@ -147,6 +181,21 @@ fn main() -> Result<(), Error> {
                 .help(&tr!(
                     "The encoding used for the characters in the POT file's locale."
                 )),
+        )
+        .arg(
+            Arg::with_name("add-location")
+                .long("add-location")
+                .short("n")
+                .help(&tr!(
+                    "How much message location information to include in the output. \
+                     (default). If the type is ‘full’ (the default), it generates the \
+                     lines with both file name and line number: ‘#: filename:line’. \
+                     If it is ‘file’, the line number part is omitted: ‘#: filename’. \
+                     If it is ‘never’, nothing is generated."
+                ))
+                .value_name("type")
+                .possible_values(&["full", "file", "never"])
+                .default_value("full"),
         )
         .arg(
             Arg::with_name("INPUT")
@@ -232,6 +281,12 @@ fn main() -> Result<(), Error> {
             .value_of("charset")
             .expect("expected charset to have a default value")
             .to_owned(),
+        add_location: AddLocation::from_str(
+            matches
+                .value_of("add-location")
+                .expect("expected add-location to have a default value"),
+        )
+        .expect("expected add-location to be a valid value"),
     };
 
     let mut messages: Vec<_> = results.values().collect();

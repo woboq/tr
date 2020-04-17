@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-29 15:08+0000\n"
+"POT-Creation-Date: 2020-04-17 07:19+0000\n"
 "PO-Revision-Date: 2019-09-30 17:36+0200\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -14,22 +14,22 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Lokalize 2.0\n"
 
-#: src/main.rs:79
+#: src/main.rs:113
 msgid "Extract strings from a rust crate to be translated with gettext"
 msgstr ""
 "Extrahieren Zeichenfolge aus einer Rust Crate, um sie mit gettext zu "
 "übersetzen"
 
-#: src/main.rs:85
+#: src/main.rs:119
 msgid "Use name.po for output (instead of messages.po)"
 msgstr "Ausgabe in NAME.po (anstatt in messages.po)"
 
-#: src/main.rs:93
+#: src/main.rs:127
 msgid "Write output to specified file (instead of messages.po)."
 msgstr "Ausgabe in die angegebene datei schreiben (anstatt in messages.po)"
 
 #. documentation for keywordspec goes here
-#: src/main.rs:105
+#: src/main.rs:139
 msgid ""
 "Specify keywordspec as an additional keyword to be looked for.Refer to the "
 "xgettext documentation for more info."
@@ -37,23 +37,23 @@ msgstr ""
 "Ausgabe ein zusätzliches Schlüsselwort an nach dem gesucht werden soll."
 "Weitere Informationen finden Sie in der xgettext-Dokumentation."
 
-#: src/main.rs:112
+#: src/main.rs:146
 msgid "Don’t write header with ‘msgid \"\"’ entry"
 msgstr "»msgid \"\"«-Eintrag im Kopfteil nicht erstellen"
 
-#: src/main.rs:118
+#: src/main.rs:152
 msgid "Set the copyright holder in the output."
 msgstr "Uhrheberrechtsinhaber in Ausgabe setzen"
 
-#: src/main.rs:124
+#: src/main.rs:158
 msgid "Set the package name in the header of the output."
 msgstr "Paketname für die Ausgabe setzen"
 
-#: src/main.rs:130
+#: src/main.rs:164
 msgid "Set the package version in the header of the output."
 msgstr "Paketversion in Ausgabe setzen"
 
-#: src/main.rs:137
+#: src/main.rs:171
 msgid ""
 "Set the reporting address for msgid bugs. This is the email address or URL "
 "to which the translators shall report bugs in the untranslated strings"
@@ -62,12 +62,20 @@ msgstr ""
 "die die Übersetzer Fehler in den nicht übersetzten Zeichenfolgen melden "
 "sollen"
 
-#: src/main.rs:148
+#: src/main.rs:182
 msgid "The encoding used for the characters in the POT file's locale."
 msgstr ""
 
+#: src/main.rs:190
+msgid ""
+"How much message location information to include in the output. (default). "
+"If the type is ‘full’ (the default), it generates the lines with both file "
+"name and line number: ‘#: filename:line’. If it is ‘file’, the line number "
+"part is omitted: ‘#: filename’. If it is ‘never’, nothing is generated."
+msgstr ""
+
 #. documentation for the input
-#: src/main.rs:154
+#: src/main.rs:203
 msgid "Main rust files to parse (will recurse into modules)"
 msgstr "Haupt-Rust-Dateien zum Parsen (werden in Module zerlegt)"
 
