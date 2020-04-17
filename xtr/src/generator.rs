@@ -85,10 +85,10 @@ msgstr ""
                     AddLocation::File => {
                         write!(output, " {}", l.file.to_string_lossy())?;
                     }
-                    _ => panic!(format!(
+                    _ => panic!(
                         "unsupported add-location option {0:?}",
                         output_details.add_location
-                    )),
+                    ),
                 }
             }
             writeln!(output)?;
