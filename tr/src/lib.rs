@@ -262,7 +262,7 @@ pub mod internal {
     // TODO: use parking_lot::RwLock
     lazy_static::lazy_static! {
         static ref TRANSLATORS: RwLock<HashMap<&'static str, Box<dyn Translator>>> =
-            { Default::default() };
+            Default::default();
     }
 
     pub fn with_translator<T>(module: &'static str, func: impl FnOnce(&dyn Translator) -> T) -> T {
