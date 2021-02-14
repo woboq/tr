@@ -14,15 +14,13 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use syn;
-
+use quote::ToTokens;
 use tr::{tr, tr_init};
 
 use anyhow::{anyhow, Error};
 use clap::{App, Arg};
 use std::collections::HashMap;
 use std::str::FromStr;
-use syn::export::ToTokens;
 
 mod crate_visitor;
 mod extract_messages;
