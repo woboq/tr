@@ -5,7 +5,7 @@
 This repository is an attempt to make it possible to localize rust application.
 There are two crates
 
-* `tr` is a runtime library wrapping gettext (currently), in order to provide
+* `tr` is a runtime library wrapping gettext (currently), in order to provide a
   convenient way to localize an application.
 
 * `xtr` is a binary similar to GNU's `xgettext` which extract string from a rust crate.
@@ -29,9 +29,9 @@ There are two crates
    string literal.
  * The macro can do rust-style formatting. This makes it possible to re-order the arguments in the translations.
  * `Hello {}` or `Hello {0}` or Hello `Hello {name}` works.
- * Currently, the default backend is using the [`gettext-rs`](https://crates.io/crates/gettext-rs) crate,
+ * Currently, the default backend uses the [`gettext-rs`](https://crates.io/crates/gettext-rs) crate,
    but this could be changed to [`gettext`](https://crates.io/crates/gettext) in the future.
- * Plurals is handled by gettext, which supports the different plurals forms of several languages.
+ * Plurals are handled by gettext, which support the different plurals forms of several languages.
 
 ## Future plans
 
@@ -85,7 +85,7 @@ special syntax of the tr! macro has been added.
 xtr src/main.rs -o example.pot
 ```
 
-This will extract the stirngs from all the modules of the crate, and create a file `example.pot`.
+This will extract the strings from all the modules of the crate, and create a file `example.pot`.
 You can now use the gettext tools to translate this file.
 
 ## Differences with `xgettext`
