@@ -101,10 +101,11 @@ msgstr ""
 
         if let Some(ref c) = m.plural {
             writeln!(output, "msgid_plural {}", escape(&c))?;
+            writeln!(output, "msgstr[0] \"\"")?;
+            writeln!(output, "msgstr[1] \"\"")?;
+        } else {
+            writeln!(output, "msgstr \"\"")?;
         }
-
-        //writeln!(output, "msgstr {}", escape(&m.msgid))?;
-        writeln!(output, "msgstr \"\"")?;
     }
     Ok(())
 }
