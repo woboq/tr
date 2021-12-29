@@ -346,7 +346,10 @@ pub mod internal {
 
     #[cfg(feature = "gettext-rs")]
     pub fn init<T: Into<Vec<u8>>>(module: &'static str, dir: T) {
-        gettextrs::bindtextdomain::<Vec<u8>>(domain_from_module(module).into(), dir.into());
+        // FIXME: change T from `Into<Vec<u8>> to `Into<PathBuf>`
+        let dir = String::from_utf8(dir.into()).unwrap();
+        // FIXME: don't ignore errors
+        let _ = gettextrs::bindtextdomain(domain_from_module(module), dir);
 
         static START: std::sync::Once = std::sync::Once::new();
         START.call_once(|| {

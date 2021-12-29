@@ -16,5 +16,5 @@ default = ["gettext-rs"]
 
 [dependencies]
 lazy_static = "1.2"
-gettext-rs = { version = "0.5", optional = true, features = ["gettext-system"] }
+gettext-rs = { version = "0.7", optional = true, features = ["gettext-system"] }
 gettext = { version = "0.4", optional = true }
