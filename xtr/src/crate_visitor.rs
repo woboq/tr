@@ -127,6 +127,19 @@ where
                 .unwrap_or_else(|err| self.mod_error = Some(err));
         }
 
+        let mut nested_mod_dir = self.current_path.clone();
+        nested_mod_dir.pop();
+        let subdir = self.current_path.file_name().unwrap().to_str().unwrap();
+        if let Some(without_suffix) = subdir.strip_suffix(".rs") {
+            // Support the case when "mod bar;" in src/foo.rs means an src/foo/bar.rs file.
+            let adjacent = nested_mod_dir.join(&format!("{}/{}.rs", without_suffix, mod_name));
+            if adjacent.is_file() {
+                return self
+                    .parse_mod(adjacent)
+                    .unwrap_or_else(|err| self.mod_error = Some(err));
+            }
+        }
+
         panic!(
             "No file with module definition for `mod {}` in file {:?}",
             mod_name, self.current_path
