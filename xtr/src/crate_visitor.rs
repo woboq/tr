@@ -97,12 +97,16 @@ where
 
         // Determine the path of the inner module's file
         for attr in &item.attrs {
-            match attr.parse_meta() {
-                Ok(syn::Meta::NameValue(syn::MetaNameValue {
-                    ref path,
-                    lit: syn::Lit::Str(ref s),
+            match &attr.meta {
+                syn::Meta::NameValue(syn::MetaNameValue {
+                    path,
+                    value:
+                        syn::Expr::Lit(syn::ExprLit {
+                            lit: syn::Lit::Str(s),
+                            ..
+                        }),
                     ..
-                })) if path.is_ident("path") => {
+                }) if path.is_ident("path") => {
                     let mod_path = self.mod_dir.join(&s.value());
                     return self
                         .parse_mod(mod_path)
