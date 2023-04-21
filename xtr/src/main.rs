@@ -18,7 +18,7 @@ use quote::ToTokens;
 use tr::{tr, tr_init};
 
 use anyhow::{anyhow, Error};
-use clap::{App, Arg};
+use clap::{arg, command, Arg, ArgAction};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -105,64 +105,51 @@ fn main() -> Result<(), Error> {
     tr_init!(concat!(env!("CARGO_MANIFEST_DIR"), "/lang/"));
 
     // The options are made to be compatible with xgetext options
-    let matches = App::new("xtr")
-        .version(clap::crate_version!())
-        .author(clap::crate_authors!())
-        .about(tr!("Extract strings from a rust crate to be translated with gettext").as_ref())
+    let matches = command!()
+        .about(tr!(
+            "Extract strings from a rust crate to be translated with gettext"
+        ))
         .arg(
-            Arg::with_name("domain")
-                .short("d")
-                .long("default-domain")
-                .value_name("domain")
+            arg!(domain: -d --domain <domain>)
                 .help(&tr!("Use name.po for output (instead of messages.po)")),
         )
+        .arg(arg!(OUTPUT: -o --output <file>).help(&tr!(
+            "Write output to specified file (instead of messages.po)."
+        )))
         .arg(
-            Arg::with_name("OUTPUT")
-                .short("o")
-                .long("output")
-                .value_name("file")
-                .help(&tr!(
-                    "Write output to specified file (instead of messages.po)."
-                )),
-        )
-        .arg(
-            Arg::with_name("KEYWORDS")
-                .short("k")
-                .long("keyword")
-                .value_name("keywordspec")
-                .use_delimiter(false)
-                .multiple(true)
+            arg!(KEYWORDS: -k --keywords <keywordspec>)
+                .action(ArgAction::Append)
                 .help(&tr!(
                     // documentation for keywordspec goes here
-                    "Specify keywordspec as an additional keyword to be looked for.\
+                    "Specify keywordspec as an additional keyword to be looked for. \
                      Refer to the xgettext documentation for more info."
                 )),
         )
         .arg(
-            Arg::with_name("omit-header")
+            Arg::new("omit-header")
                 .long("omit-header")
                 .help(&tr!(r#"Don’t write header with ‘msgid ""’ entry"#)),
         )
         .arg(
-            Arg::with_name("copyright-holder")
+            Arg::new("copyright-holder")
                 .long("copyright-holder")
                 .value_name("string")
                 .help(&tr!("Set the copyright holder in the output.")),
         )
         .arg(
-            Arg::with_name("package-name")
+            Arg::new("package-name")
                 .long("package-name")
                 .value_name("package")
                 .help(&tr!("Set the package name in the header of the output.")),
         )
         .arg(
-            Arg::with_name("package-version")
+            Arg::new("package-version")
                 .long("package-version")
                 .value_name("version")
                 .help(&tr!("Set the package version in the header of the output.")),
         )
         .arg(
-            Arg::with_name("msgid-bugs-address")
+            Arg::new("msgid-bugs-address")
                 .long("msgid-bugs-address")
                 .value_name("email@address")
                 .help(&tr!(
@@ -171,7 +158,7 @@ fn main() -> Result<(), Error> {
                 )),
         )
         .arg(
-            Arg::with_name("charset")
+            Arg::new("charset")
                 .long("charset")
                 .value_name("encoding")
                 .default_value("UTF-8")
@@ -180,9 +167,9 @@ fn main() -> Result<(), Error> {
                 )),
         )
         .arg(
-            Arg::with_name("add-location")
+            Arg::new("add-location")
                 .long("add-location")
-                .short("n")
+                .short('n')
                 .help(&tr!(
                     "How much message location information to include in the output. \
                      (default). If the type is ‘full’ (the default), it generates the \
@@ -191,21 +178,21 @@ fn main() -> Result<(), Error> {
                      If it is ‘never’, nothing is generated."
                 ))
                 .value_name("type")
-                .possible_values(&["full", "file", "never"])
+                .value_parser(["full", "file", "never"])
                 .default_value("full"),
         )
         .arg(
-            Arg::with_name("INPUT")
+            Arg::new("INPUT")
                 // documentation for the input
                 .help(&tr!("Main rust files to parse (will recurse into modules)"))
                 .required(true)
-                .multiple(true),
+                .action(ArgAction::Append),
         )
         .get_matches();
 
     let keywords = matches
-        .values_of("KEYWORDS")
-        .map(|x| x.collect())
+        .get_occurrences("KEYWORDS")
+        .map(|x| x.flatten().map(String::as_str).collect())
         .unwrap_or_else(|| {
             vec![
                 "tr",
@@ -255,8 +242,10 @@ fn main() -> Result<(), Error> {
 
     let mut results = HashMap::new();
 
-    let inputs = matches.values_of("INPUT").expect("Missing crate root");
-    for i in inputs {
+    let inputs = matches
+        .get_occurrences::<String>("INPUT")
+        .expect("Missing crate root");
+    for i in inputs.flatten() {
         crate_visitor::visit_crate(i, |path, source, file| {
             extract_messages::extract_messages(
                 &mut results,
@@ -269,18 +258,18 @@ fn main() -> Result<(), Error> {
     }
 
     let od = OutputDetails {
-        omit_header: matches.is_present("omit-header"),
-        copyright_holder: matches.value_of("copyright-holder").map(str::to_owned),
-        package_name: matches.value_of("package-name").map(str::to_owned),
-        package_version: matches.value_of("package-version").map(str::to_owned),
-        bugs_address: matches.value_of("msgid-bugs-address").map(str::to_owned),
+        omit_header: matches.contains_id("omit-header"),
+        copyright_holder: matches.get_one("copyright-holder").cloned(),
+        package_name: matches.get_one("package-name").cloned(),
+        package_version: matches.get_one("package-version").cloned(),
+        bugs_address: matches.get_one("msgid-bugs-address").cloned(),
         charset: matches
-            .value_of("charset")
+            .get_one::<String>("charset")
             .expect("expected charset to have a default value")
-            .to_owned(),
+            .clone(),
         add_location: AddLocation::from_str(
             matches
-                .value_of("add-location")
+                .get_one::<String>("add-location")
                 .expect("expected add-location to have a default value"),
         )
         .expect("expected add-location to be a valid value"),
@@ -289,10 +278,15 @@ fn main() -> Result<(), Error> {
     let mut messages: Vec<_> = results.values().collect();
     messages.sort_by_key(|m| m.index);
     generator::generate(
-        matches
-            .value_of("OUTPUT")
-            .map(|s| s.to_owned())
-            .unwrap_or_else(|| format!("{}.po", matches.value_of("domain").unwrap_or("messages"))),
+        matches.get_one("OUTPUT").cloned().unwrap_or_else(|| {
+            format!(
+                "{}.po",
+                matches
+                    .get_one("domain")
+                    .map(String::as_str)
+                    .unwrap_or("messages")
+            )
+        }),
         od,
         messages,
     )?;

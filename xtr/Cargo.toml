@@ -18,7 +18,7 @@ proc-macro2 = { version = "1", features = ["span-locations"] }
 # It is also used in extract_message.rs to parse the literals into their string representation
 syn = { version = "2", features=["full", "visit", "extra-traits", "printing"] }
 quote = "1"
-clap = "2.32"
+clap = { version = "4.2", features = ["cargo"] }
 tr = { path="../tr", version = "0.1" }
 anyhow = "1"
 chrono = "0.4.6"
