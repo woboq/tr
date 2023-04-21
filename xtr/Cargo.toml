@@ -1,6 +1,6 @@
 [package]
 name = "xtr"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["Olivier Goffart <ogoffart@woboq.com>"]
 description = "Extract strings from a rust crate to be translated with gettext"
 license = "AGPL-3.0"
