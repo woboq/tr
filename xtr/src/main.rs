@@ -113,7 +113,7 @@ fn main() -> Result<(), Error> {
             Arg::new("domain")
                 .short('d')
                 .long("default-domain")
-                .value_name("domain")
+                .value_name("name")
                 .help(&tr!("Use name.po for output (instead of messages.po)")),
         )
         .arg(arg!(OUTPUT: -o --output <file>).help(&tr!(
