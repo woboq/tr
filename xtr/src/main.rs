@@ -110,7 +110,10 @@ fn main() -> Result<(), Error> {
             "Extract strings from a rust crate to be translated with gettext"
         ))
         .arg(
-            arg!(domain: -d --default-domain <domain>)
+            Arg::new("domain")
+                .short('d')
+                .long("default-domain")
+                .value_name("domain")
                 .help(&tr!("Use name.po for output (instead of messages.po)")),
         )
         .arg(arg!(OUTPUT: -o --output <file>).help(&tr!(
