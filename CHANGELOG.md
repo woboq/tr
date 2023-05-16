@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.7
+## 0.1.8 - 2022-05-16
+
+### xtr
+
+ - Restore `--default-domain` flag (#15)
+
+## 0.1.7 - 2023-04-21
 
 ### tr
 
