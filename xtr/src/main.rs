@@ -131,6 +131,7 @@ fn main() -> Result<(), Error> {
         .arg(
             Arg::new("omit-header")
                 .long("omit-header")
+                .action(ArgAction::SetTrue)
                 .help(&tr!(r#"Don’t write header with ‘msgid ""’ entry"#)),
         )
         .arg(
@@ -261,7 +262,7 @@ fn main() -> Result<(), Error> {
     }
 
     let od = OutputDetails {
-        omit_header: matches.contains_id("omit-header"),
+        omit_header: matches.get_flag("omit-header"),
         copyright_holder: matches.get_one("copyright-holder").cloned(),
         package_name: matches.get_one("package-name").cloned(),
         package_version: matches.get_one("package-version").cloned(),
