@@ -21,6 +21,7 @@ use std::mem::swap;
 use std::path::{Path, PathBuf};
 use syn;
 use syn::visit::Visit;
+use syn::ext::IdentExt;
 
 /**
  *  Parse a crate to visit every module. The `visitor` function will be called for every file
@@ -116,7 +117,7 @@ where
             }
         }
 
-        let mod_name = item.ident.to_string();
+        let mod_name = item.ident.unraw().to_string();
         let mut subdir = self.mod_dir.join(mod_name.clone());
         subdir.push("mod.rs");
         if subdir.is_file() {
