@@ -143,6 +143,12 @@ where
                     .parse_mod(adjacent)
                     .unwrap_or_else(|err| self.mod_error = Some(err));
             }
+            let adjacent_mod = nested_mod_dir.join(without_suffix).join(&mod_name).join("mod.rs");
+            if adjacent_mod.is_file() {
+                return self
+                    .parse_mod(adjacent_mod)
+                    .unwrap_or_else(|err| self.mod_error = Some(err));
+            }
         }
 
         panic!(
