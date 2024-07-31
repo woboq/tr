@@ -358,10 +358,11 @@ pub mod internal {
     }
 
     pub fn set_translator(module: &'static str, translator: impl Translator + 'static) {
+        let domain = domain_from_module(module);
         TRANSLATORS
             .write()
             .unwrap()
-            .insert(module, Box::new(translator));
+            .insert(domain, Box::new(translator));
     }
 }
 
