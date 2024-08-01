@@ -167,12 +167,11 @@ pub mod runtime_format {
         }};
         ($fmt:expr,  $($tail:tt)* ) => {{
             let format_str = $fmt;
-            let fa = $crate::runtime_format::FormatArg {
+            format!("{}", $crate::runtime_format::FormatArg {
                 format_str: AsRef::as_ref(&format_str),
                 //args: &[ $( $crate::runtime_format!(@parse_arg $e) ),* ],
                 args: $crate::runtime_format!(@parse_args [] $($tail)*)
-            };
-            format!("{}", fa)
+            })
         }};
 
         (@parse_args [$($args:tt)*]) => { &[ $( $args ),* ]  };
@@ -545,5 +544,7 @@ mod tests {
             tr!("ctx" => "{0} have one item" | "{0} have {n} items" % 42, "I"),
             "I have 42 items"
         );
+
+        assert_eq!(tr!("{} = {}", 255, format_args!("{:#x}", 255)), "255 = 0xff");
     }
 }
