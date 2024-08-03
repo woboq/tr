@@ -81,80 +81,75 @@ pub mod runtime_format {
     //!
     //! TODO: better error reporting and support for more replacement option
 
-    /// The result of the runtime_format! macro.
-    /// This implements the Display
-    pub struct FormatArg<'a> {
-        #[doc(hidden)]
-        pub format_str: &'a str,
-        #[doc(hidden)]
-        pub args: &'a [(&'static str, &'a dyn (::std::fmt::Display))],
-    }
-
-    impl<'a> ::std::fmt::Display for FormatArg<'a> {
-        fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-            let mut arg_idx = 0;
-            let mut pos = 0;
-            while let Some(mut p) = self.format_str[pos..].find(|x| x == '{' || x == '}') {
-                if self.format_str.len() - pos < p + 1 {
-                    break;
-                }
-                p += pos;
-
-                // Skip escaped }
-                if self.format_str.get(p..=p) == Some("}") {
-                    self.format_str[pos..=p].fmt(f)?;
-                    if self.format_str.get(p + 1..=p + 1) == Some("}") {
-                        pos = p + 2;
-                    } else {
-                        // FIXME! this is an error, it should be reported  ('}' must be escaped)
-                        pos = p + 1;
-                    }
-                    continue;
-                }
-
-                // Skip escaped {
-                if self.format_str.get(p + 1..=p + 1) == Some("{") {
-                    self.format_str[pos..=p].fmt(f)?;
-                    pos = p + 2;
-                    continue;
-                }
-
-                // Find the argument
-                let end = if let Some(end) = self.format_str[p..].find('}') {
-                    end + p
-                } else {
-                    // FIXME! this is an error, it should be reported
-                    self.format_str[pos..=p].fmt(f)?;
-                    pos = p + 1;
-                    continue;
-                };
-                let argument = self.format_str[p + 1..end].trim();
-                let pa = if p == end - 1 {
-                    arg_idx += 1;
-                    arg_idx - 1
-                } else if let Ok(n) = argument.parse::<usize>() {
-                    n
-                } else if let Some(p) = self.args.iter().position(|x| x.0 == argument) {
-                    p
-                } else {
-                    // FIXME! this is an error, it should be reported
-                    self.format_str[pos..end].fmt(f)?;
-                    pos = end;
-                    continue;
-                };
-
-                // format the part before the '{'
-                self.format_str[pos..p].fmt(f)?;
-                if let Some(a) = self.args.get(pa) {
-                    a.1.fmt(f)?;
-                } else {
-                    // FIXME! this is an error, it should be reported
-                    self.format_str[p..=end].fmt(f)?;
-                }
-                pos = end + 1;
+    /// Converts the result of the runtime_format! macro into the final String
+    pub fn display_string(format_str: &str, args: &[(&str, &dyn ::std::fmt::Display)]) -> String {
+        use ::std::fmt::Write;
+        let fmt_len = format_str.len();
+        let mut res = String::with_capacity(2 * fmt_len);
+        let mut arg_idx = 0;
+        let mut pos = 0;
+        while let Some(mut p) = format_str[pos..].find(|x| x == '{' || x == '}') {
+            if fmt_len - pos < p + 1 {
+                break;
             }
-            self.format_str[pos..].fmt(f)
+            p += pos;
+
+            // Skip escaped }
+            if format_str.get(p..=p) == Some("}") {
+                res.push_str(&format_str[pos..=p]);
+                if format_str.get(p + 1..=p + 1) == Some("}") {
+                    pos = p + 2;
+                } else {
+                    // FIXME! this is an error, it should be reported  ('}' must be escaped)
+                    pos = p + 1;
+                }
+                continue;
+            }
+
+            // Skip escaped {
+            if format_str.get(p + 1..=p + 1) == Some("{") {
+                res.push_str(&format_str[pos..=p]);
+                pos = p + 2;
+                continue;
+            }
+
+            // Find the argument
+            let end = if let Some(end) = format_str[p..].find('}') {
+                end + p
+            } else {
+                // FIXME! this is an error, it should be reported
+                res.push_str(&format_str[pos..=p]);
+                pos = p + 1;
+                continue;
+            };
+            let argument = format_str[p + 1..end].trim();
+            let pa = if p == end - 1 {
+                arg_idx += 1;
+                arg_idx - 1
+            } else if let Ok(n) = argument.parse::<usize>() {
+                n
+            } else if let Some(p) = args.iter().position(|x| x.0 == argument) {
+                p
+            } else {
+                // FIXME! this is an error, it should be reported
+                res.push_str(&format_str[pos..end]);
+                pos = end;
+                continue;
+            };
+
+            // format the part before the '{'
+            res.push_str(&format_str[pos..p]);
+            if let Some(a) = args.get(pa) {
+                write!(&mut res, "{}", a.1)
+                    .expect("a Display implementation returned an error unexpectedly");
+            } else {
+                // FIXME! this is an error, it should be reported
+                res.push_str(&format_str[p..=end]);
+            }
+            pos = end + 1;
         }
+        res.push_str(&format_str[pos..]);
+        res
     }
 
     #[doc(hidden)]
@@ -163,15 +158,13 @@ pub mod runtime_format {
     macro_rules! runtime_format {
         ($fmt:expr) => {{
             // TODO! check if 'fmt' does not have {}
-            format!("{}", $fmt)
+            String::from($fmt)
         }};
         ($fmt:expr,  $($tail:tt)* ) => {{
-            let format_str = $fmt;
-            format!("{}", $crate::runtime_format::FormatArg {
-                format_str: AsRef::as_ref(&format_str),
-                //args: &[ $( $crate::runtime_format!(@parse_arg $e) ),* ],
-                args: $crate::runtime_format!(@parse_args [] $($tail)*)
-            })
+            $crate::runtime_format::display_string(
+                AsRef::as_ref(&$fmt),
+                $crate::runtime_format!(@parse_args [] $($tail)*),
+            )
         }};
 
         (@parse_args [$($args:tt)*]) => { &[ $( $args ),* ]  };
