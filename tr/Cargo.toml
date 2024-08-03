@@ -18,3 +18,10 @@ default = ["gettext-rs"]
 lazy_static = "1.2"
 gettext-rs = { version = "0.7", optional = true, features = ["gettext-system"] }
 gettext = { version = "0.4", optional = true }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "my_bench"
+harness = false
