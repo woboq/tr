@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.10 - 2024-08-11
+
+### tr
+
+ - Use the name of the crate in `set_translator!` instead of the full module (#24)
+ - Allow `format_args!` as argument to `tr!` (#25)
+
+### xtr
+
+ - Support module with raw identifier (#19)
+ - Allow `mod bar;` in `foo.rs` refer to `foo/bar/mod.rs` (#23)
+
 ## 0.1.9 - 2023-06-12
 
 ### xtr
