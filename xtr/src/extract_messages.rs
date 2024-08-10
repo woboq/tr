@@ -170,7 +170,7 @@ impl<'a> Extractor<'a> {
             if let Some(msgid) = literal_to_string(&lit) {
                 let key = MessageKey(msgid.clone(), msgctxt.clone().unwrap_or_default());
                 let index = self.results.len();
-                let mut message = self.results.entry(key).or_insert_with(|| Message {
+                let message = self.results.entry(key).or_insert_with(|| Message {
                     msgctxt,
                     msgid,
                     index,
