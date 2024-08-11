@@ -1,8 +1,9 @@
 # Localisation of rust applications
 
-[![Travis Build Status](https://travis-ci.org/woboq/tr.svg?branch=master)](https://travis-ci.org/woboq/tr)
+[![docs.rs](https://docs.rs/tr/badge.svg)](https://docs.rs/tr)
 
-This repository is an attempt to make it possible to localize rust application.
+This repository provides tools for localizing Rust applications, making it easier to translate your software to different languages.
+
 There are two crates
 
 * `tr` is a runtime library wrapping gettext (currently), in order to provide a
@@ -16,7 +17,7 @@ There are two crates
 # How to translate a rust application
 
 1. Annotate the strings in your source code with the write macro/functions. You can use
-    * The the `tr!` macro from this `tr` crate (still work in progress), or
+    * The `tr!` macro from this `tr` crate (still work in progress), or
     * The gettext function from the `gettext` or the `gettext-rs` crate
 
 2. Run the `xtr` program over your crate to extract the string in a .pot file
@@ -85,7 +86,7 @@ special syntax of the tr! macro has been added.
 xtr src/main.rs -o example.pot
 ```
 
-This will extract the strings from all the modules of the crate, and create a file `example.pot`.
+This will extract strings from all the crate's modules and create a file `example.pot`.
 You can now use the gettext tools to translate this file.
 
 ## Differences with `xgettext`
