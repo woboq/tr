@@ -9,7 +9,8 @@ repository = "https://github.com/woboq/tr"
 documentation = "https://docs.rs/tr"
 keywords = ["internationalization", "translation", "l10n", "i18n", "gettext"]
 categories = ["internationalization", "localization"]
-edition = "2018"
+edition = "2024"
+rust-version = "1.85.1"
 
 [features]
 default = ["gettext-rs"]

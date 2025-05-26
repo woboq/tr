@@ -9,8 +9,8 @@ repository = "https://github.com/woboq/tr"
 documentation = "https://docs.rs/tr"
 keywords = ["localization", "l10n", "i18n", "gettext", "xgettext"]
 categories = ["internationalization", "localization"]
-edition = "2018"
-
+edition = "2024"
+rust-version = "1.87.0"
 
 [dependencies]
 proc-macro2 = { version = "1", features = ["span-locations"] }
