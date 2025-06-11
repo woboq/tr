@@ -16,6 +16,8 @@ jobs:
     strategy:
       matrix:
         rust:
+          # MSRV
+          - 1.60
           - stable
           - beta
           - nightly

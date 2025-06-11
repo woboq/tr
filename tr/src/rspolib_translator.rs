@@ -18,7 +18,113 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 use std::collections::HashMap;
 
-pub use rspolib;
+/// Use this type to load `.po` files directly in your application for translations.
+///
+/// Construct the `PoTranslator` from either a path via [`Self::from_path`] or a vec of
+/// data via [`Self::from_vec_u8`].
+///
+/// `PoTranslator` implements the [`crate::Translator`] trait and can be passed to
+/// [`crate::set_translator!`].
+#[cfg(feature = "po-translator")]
+pub struct PoTranslator(RSPoLibTranslator);
+
+#[cfg(feature = "po-translator")]
+impl PoTranslator {
+    /// Constructs a `PoTranslator` from the given path.
+    pub fn from_path(path: &std::path::Path) -> Result<Self, MoPoTranslatorLoadError> {
+        let options = rspolib::FileOptions::from(path);
+        Ok(Self(
+            rspolib::pofile(options)
+                .map_err(|parse_error| MoPoTranslatorLoadError::PoParseError(parse_error.into()))
+                .and_then(RSPoLibTranslator::try_from)?,
+        ))
+    }
+
+    /// Constructs a `PoTranslator` from the given raw vec u8 that must be valid `.po` file contents.
+    pub fn from_vec_u8(data: Vec<u8>) -> Result<Self, MoPoTranslatorLoadError> {
+        let options = rspolib::FileOptions::from(data);
+        Ok(Self(
+            rspolib::pofile(options)
+                .map_err(|parse_error| MoPoTranslatorLoadError::PoParseError(parse_error.into()))
+                .and_then(RSPoLibTranslator::try_from)?,
+        ))
+    }
+}
+
+#[cfg(feature = "po-translator")]
+impl crate::Translator for PoTranslator {
+    fn translate<'a>(
+        &'a self,
+        string: &'a str,
+        context: Option<&'a str>,
+    ) -> std::borrow::Cow<'a, str> {
+        self.0.translate(string, context)
+    }
+
+    fn ntranslate<'a>(
+        &'a self,
+        n: u64,
+        singular: &'a str,
+        plural: &'a str,
+        context: Option<&'a str>,
+    ) -> std::borrow::Cow<'a, str> {
+        self.0.ntranslate(n, singular, plural, context)
+    }
+}
+
+/// Use this type to load `.mo` files directly in your application for translations.
+///
+/// Construct the `MoTranslator` from either a path via [`Self::from_path`] or a vec of
+/// data via [`Self::from_vec_u8`].
+///
+/// `MoTranslator` implements the [`crate::Translator`] trait and can be passed to
+/// [`crate::set_translator!`].
+#[cfg(feature = "mo-translator")]
+pub struct MoTranslator(RSPoLibTranslator);
+
+#[cfg(feature = "mo-translator")]
+impl MoTranslator {
+    /// Constructs a `MoTranslator` from the given path.
+    pub fn from_path(path: &std::path::Path) -> Result<Self, MoPoTranslatorLoadError> {
+        let options = rspolib::FileOptions::from(path);
+        Ok(Self(
+            rspolib::mofile(options)
+                .map_err(|parse_error| MoPoTranslatorLoadError::MoParseError(parse_error.into()))
+                .and_then(RSPoLibTranslator::try_from)?,
+        ))
+    }
+
+    /// Constructs a `MoTranslator` from the given raw vec u8 that must be valid `.mo` file contents.
+    pub fn from_vec_u8(data: Vec<u8>) -> Result<Self, MoPoTranslatorLoadError> {
+        let options = rspolib::FileOptions::from(data);
+        Ok(Self(
+            rspolib::mofile(options)
+                .map_err(|parse_error| MoPoTranslatorLoadError::MoParseError(parse_error.into()))
+                .and_then(RSPoLibTranslator::try_from)?,
+        ))
+    }
+}
+
+#[cfg(feature = "mo-translator")]
+impl crate::Translator for MoTranslator {
+    fn translate<'a>(
+        &'a self,
+        string: &'a str,
+        context: Option<&'a str>,
+    ) -> std::borrow::Cow<'a, str> {
+        self.0.translate(string, context)
+    }
+
+    fn ntranslate<'a>(
+        &'a self,
+        n: u64,
+        singular: &'a str,
+        plural: &'a str,
+        context: Option<&'a str>,
+    ) -> std::borrow::Cow<'a, str> {
+        self.0.ntranslate(n, singular, plural, context)
+    }
+}
 
 /// Use the `RSPoLibTranslator` to load messages from a `.po` or `.mo` files.
 ///
@@ -27,7 +133,7 @@ pub use rspolib;
 ///
 /// `RSPoLibTranslator` implements the [`crate::Translator`] trait and can then
 /// be passed to [`crate::set_translator!`].
-pub struct RSPoLibTranslator {
+struct RSPoLibTranslator {
     /// Translations are indexed by message id, optional, plural message id, and optional context.
     translations: HashMap<TranslationKey, Translation>,
     plural_rules: plural_rule_parser::Expression,
@@ -37,7 +143,7 @@ impl RSPoLibTranslator {
     fn new(
         entries: impl IntoIterator<Item = POMOEntry>,
         metadata: &HashMap<String, String>,
-    ) -> Result<Self, RSPolibTranslatorLoadError> {
+    ) -> Result<Self, MoPoTranslatorLoadError> {
         let translations = entries
             .into_iter()
             .filter_map(|entry| {
@@ -65,7 +171,7 @@ impl RSPoLibTranslator {
                     if key == "plural" {
                         Some(
                             plural_rule_parser::parse_rule_expression(expression).map_err(
-                                |parse_error| RSPolibTranslatorLoadError::InvalidPluralRules {
+                                |parse_error| MoPoTranslatorLoadError::InvalidPluralRules {
                                     rules: expression.to_string(),
                                     error: parse_error.0.to_string(),
                                 },
@@ -86,7 +192,7 @@ impl RSPoLibTranslator {
 }
 
 impl TryFrom<rspolib::MOFile> for RSPoLibTranslator {
-    type Error = RSPolibTranslatorLoadError;
+    type Error = MoPoTranslatorLoadError;
     fn try_from(mofile: rspolib::MOFile) -> Result<Self, Self::Error> {
         RSPoLibTranslator::new(
             mofile.entries.into_iter().map(
@@ -112,7 +218,7 @@ impl TryFrom<rspolib::MOFile> for RSPoLibTranslator {
 }
 
 impl TryFrom<rspolib::POFile> for RSPoLibTranslator {
-    type Error = RSPolibTranslatorLoadError;
+    type Error = MoPoTranslatorLoadError;
     fn try_from(mofile: rspolib::POFile) -> Result<Self, Self::Error> {
         RSPoLibTranslator::new(
             mofile.entries.into_iter().map(
@@ -158,10 +264,14 @@ struct POMOEntry {
     msgctxt: Option<String>,
 }
 
-/// This error type is returned when converting a [`rspolib::MOFile`] or [`rspolib::POFile`]
-/// could not be converted to a [`RSPoLibTranslator`].
+/// This error type is returned when creating a [`PoTranslator`] or [`MoTranslator`]
+/// and an error occurding during parsing.
 #[non_exhaustive]
-pub enum RSPolibTranslatorLoadError {
+pub enum MoPoTranslatorLoadError {
+    /// This variant describes a failure during parsing of the `.po` file.
+    PoParseError(Box<dyn std::error::Error>),
+    /// This variant describes a failure during parsing of the `.mo` file.
+    MoParseError(Box<dyn std::error::Error>),
     /// This variant describes a failure during parsing of the plural rules.
     InvalidPluralRules {
         /// A copy of the plural rules that could not be parsed.
@@ -171,11 +281,17 @@ pub enum RSPolibTranslatorLoadError {
     },
 }
 
-impl std::error::Error for RSPolibTranslatorLoadError {}
+impl std::error::Error for MoPoTranslatorLoadError {}
 
-impl core::fmt::Display for RSPolibTranslatorLoadError {
+impl core::fmt::Display for MoPoTranslatorLoadError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::PoParseError(error) => {
+                write!(f, "Error parsing `po` file: {}", error)
+            }
+            Self::MoParseError(error) => {
+                write!(f, "Error parsing `mo` file: {}", error)
+            }
             Self::InvalidPluralRules { rules, error } => {
                 write!(f, "Error parsing plural rules '{}': {}", rules, error)
             }
@@ -183,7 +299,7 @@ impl core::fmt::Display for RSPolibTranslatorLoadError {
     }
 }
 
-impl core::fmt::Debug for RSPolibTranslatorLoadError {
+impl core::fmt::Debug for MoPoTranslatorLoadError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Display::fmt(self, f)
     }
