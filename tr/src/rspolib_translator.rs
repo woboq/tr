@@ -327,7 +327,7 @@ mod plural_rule_parser {
                     true_expr,
                     false_expr,
                 } => {
-                    if sub_expressions[*condition as usize].evaluate(sub_expressions, n) == 1 {
+                    if sub_expressions[*condition as usize].evaluate(sub_expressions, n) != 0 {
                         sub_expressions[*true_expr as usize].evaluate(sub_expressions, n)
                     } else {
                         sub_expressions[*false_expr as usize].evaluate(sub_expressions, n)
