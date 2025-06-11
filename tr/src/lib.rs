@@ -69,14 +69,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //!   right .mo files, so one must use the (`set_translator!`)[macro.set_translator.html] macro with a
 //!   `gettext::Catalog` object
 //! 
-//! Additionally, this crate permits manual translation loading from `.po` or `.mo` files using [`rspolib`].
-//! Enable the **`rspolib`** feature to obtain access to [`RSPoLibTranslator`].
-//!
+//! Additionally, this crate permits loading from `.po` or `.mo` files directly via the [`PoTranslator`] and
+//! [`MoTranslator`] types, guarded beind the respective **`mo-translator`** and **`po-translator`** features.
 
-#[cfg(feature = "rspolib")]
+#[cfg(any(feature = "po-translator", feature = "mo-translator"))]
 mod rspolib_translator;
-#[cfg(feature = "rspolib")]
-pub use rspolib_translator::{RSPoLibTranslator, RSPolibTranslatorLoadError, rspolib};
+#[cfg(any(feature = "po-translator", feature = "mo-translator"))]
+pub use rspolib_translator::MoPoTranslatorLoadError;
+
+#[cfg(feature = "po-translator")]
+pub use rspolib_translator::PoTranslator;
+#[cfg(feature = "mo-translator")]
+pub use rspolib_translator::MoTranslator;
 
 use std::borrow::Cow;
 

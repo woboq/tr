@@ -10,9 +10,12 @@ documentation = "https://docs.rs/tr"
 keywords = ["internationalization", "translation", "l10n", "i18n", "gettext"]
 categories = ["internationalization", "localization"]
 edition = "2021"
+rust-version = "1.60"
 
 [features]
 default = ["gettext-rs"]
+mo-translator = ["dep:rspolib"]
+po-translator = ["dep:rspolib"]
 
 [dependencies]
 lazy_static = "1.2"
