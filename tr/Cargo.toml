@@ -10,7 +10,7 @@ documentation = "https://docs.rs/tr"
 keywords = ["internationalization", "translation", "l10n", "i18n", "gettext"]
 categories = ["internationalization", "localization"]
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.81"
 
 [features]
 default = ["gettext-rs"]
