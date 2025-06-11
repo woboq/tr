@@ -26,8 +26,8 @@ jobs:
       with:
           toolchain: ${{ matrix.rust }}
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --all-features
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose --all-features
     - name: Run tests (release)
-      run: cargo test --release --verbose
+      run: cargo test --release --verbose --all-features
