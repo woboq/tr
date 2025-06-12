@@ -20,8 +20,8 @@ use std::io::Read;
 use std::mem::swap;
 use std::path::{Path, PathBuf};
 use syn;
-use syn::visit::Visit;
 use syn::ext::IdentExt;
+use syn::visit::Visit;
 
 /**
  *  Parse a crate to visit every module. The `visitor` function will be called for every file
@@ -143,7 +143,10 @@ where
                     .parse_mod(adjacent)
                     .unwrap_or_else(|err| self.mod_error = Some(err));
             }
-            let adjacent_mod = nested_mod_dir.join(without_suffix).join(&mod_name).join("mod.rs");
+            let adjacent_mod = nested_mod_dir
+                .join(without_suffix)
+                .join(&mod_name)
+                .join("mod.rs");
             if adjacent_mod.is_file() {
                 return self
                     .parse_mod(adjacent_mod)

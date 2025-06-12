@@ -552,6 +552,9 @@ mod tests {
             "I have 42 items"
         );
 
-        assert_eq!(tr!("{} = {}", 255, format_args!("{:#x}", 255)), "255 = 0xff");
+        assert_eq!(
+            tr!("{} = {}", 255, format_args!("{:#x}", 255)),
+            "255 = 0xff"
+        );
     }
 }
