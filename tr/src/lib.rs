@@ -259,6 +259,26 @@ pub trait Translator: Send + Sync {
     ) -> Cow<'a, str>;
 }
 
+impl<T: Translator> Translator for std::sync::Arc<T> {
+    fn translate<'a>(
+        &'a self,
+        string: &'a str,
+        context: Option<&'a str>,
+    ) -> std::borrow::Cow<'a, str> {
+        <T as Translator>::translate(&*self, string, context)
+    }
+
+    fn ntranslate<'a>(
+        &'a self,
+        n: u64,
+        singular: &'a str,
+        plural: &'a str,
+        context: Option<&'a str>,
+    ) -> std::borrow::Cow<'a, str> {
+        <T as Translator>::ntranslate(&*self, n, singular, plural, context)
+    }
+}
+
 #[doc(hidden)]
 pub mod internal {
 
