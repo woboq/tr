@@ -390,6 +390,11 @@ pub mod internal {
             .unwrap()
             .insert(domain, Box::new(translator));
     }
+
+    pub fn unset_translator(module: &'static str) {
+        let domain = domain_from_module(module);
+        TRANSLATORS.write().unwrap().remove(domain);
+    }
 }
 
 /// Macro used to translate a string.
@@ -519,6 +524,16 @@ macro_rules! tr_init {
 macro_rules! set_translator {
     ($translator:expr) => {
         $crate::internal::set_translator(module_path!(), $translator)
+    };
+}
+
+/// Clears the translator to be used for this crate.
+///
+/// Use this macro to return back to the source language.
+#[macro_export]
+macro_rules! unset_translator {
+    () => {
+        $crate::internal::unset_translator(module_path!())
     };
 }
 

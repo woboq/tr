@@ -1,4 +1,4 @@
-use tr::{set_translator, tr, Translator};
+use tr::{set_translator, tr, unset_translator, Translator};
 
 struct UpperCaseTranslator;
 impl crate::Translator for UpperCaseTranslator {
@@ -43,4 +43,7 @@ fn uppercase() {
         tr!("ctx" => "I have one item" | "I have {n} items" % 42),
         "I HAVE {N} ITEMS" // uppercased n is not replaced
     );
+
+    unset_translator!();
+    assert_eq!(tr!("Hello"), "Hello");
 }
