@@ -21,9 +21,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //! # Internationalisation helper
 //!
 //! This crate maily expose a macro that wraps gettext in a convinient ways.
-//! See the documentation of the [tr! macro](macro.tr.html).
+//! See the documentation of the [tr! macro](tr!).
 //!
-//! To translate a rust crate, simply wrap your string within the [`tr!` macro](macro.tr.html).
+//! To translate a rust crate, simply wrap your string within the [`tr!` macro](tr!).
 //! One can then use the `xtr` binary to extract all the translatable from a crate in a `.po`
 //! file. GNU gettext tools can be used to process and translate these strings.
 //!
@@ -66,9 +66,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //!
 //! - **`gettext-rs`** *(enabled by default)* - This crate wraps the gettext C library
 //! - **`gettext`** - A rust re-implementation of gettext. That crate does not take care of loading the
-//!   right .mo files, so one must use the (`set_translator!`)[macro.set_translator.html] macro with a
+//!   right .mo files, so one must use the [`set_translator!] macro with a
 //!   `gettext::Catalog` object
-//! 
+//!
 //! Additionally, this crate permits loading from `.po` or `.mo` files directly via the [`PoTranslator`] and
 //! [`MoTranslator`] types, guarded beind the respective **`mo-translator`** and **`po-translator`** features.
 
@@ -77,10 +77,10 @@ mod rspolib_translator;
 #[cfg(any(feature = "po-translator", feature = "mo-translator"))]
 pub use rspolib_translator::MoPoTranslatorLoadError;
 
-#[cfg(feature = "po-translator")]
-pub use rspolib_translator::PoTranslator;
 #[cfg(feature = "mo-translator")]
 pub use rspolib_translator::MoTranslator;
+#[cfg(feature = "po-translator")]
+pub use rspolib_translator::PoTranslator;
 
 use std::borrow::Cow;
 
@@ -247,7 +247,7 @@ pub mod runtime_format {
 /// The backend is only responsable to provide a matching string, the formatting is done
 /// using this string.
 ///
-/// The translator for a crate can be set with the set_translator! macro
+/// The translator for a crate can be set with the [`set_translator!`] macro
 pub trait Translator: Send + Sync {
     fn translate<'a>(&'a self, string: &'a str, context: Option<&'a str>) -> Cow<'a, str>;
     fn ntranslate<'a>(
@@ -487,7 +487,7 @@ macro_rules! tr_init {
 
 /// Set the translator to be used for this crate.
 ///
-/// The argument needs to be something implementing the Translator trait
+/// The argument needs to be something implementing the [`Translator`] trait
 ///
 /// For example, using the gettext crate (if the gettext feature is enabled)
 /// ```ignore

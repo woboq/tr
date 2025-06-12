@@ -31,4 +31,4 @@ name = "my_bench"
 harness = false
 
 [package.metadata.docs.rs]
-features = ["rspolib", "gettext-rs"]
+features = ["mo-translator", "po-translator", "gettext-rs"]

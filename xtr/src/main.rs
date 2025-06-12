@@ -59,7 +59,7 @@ pub struct Message {
     index: usize,
 }
 
-/// How much [Message](Message) location information to include in the
+/// How much [`Message`] location information to include in the
 /// output.
 #[derive(PartialEq, Debug)]
 pub enum AddLocation {
@@ -75,7 +75,7 @@ pub enum AddLocation {
 impl FromStr for AddLocation {
     type Err = anyhow::Error;
 
-    /// Create an [AddLocation](AddLocation) from a &str. Valid inputs
+    /// Create an [`AddLocation`] from a &str. Valid inputs
     /// are: "full", "file" or "never".
     fn from_str(s: &str) -> Result<AddLocation, Self::Err> {
         match s {
