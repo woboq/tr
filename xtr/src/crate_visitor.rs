@@ -19,7 +19,6 @@ use std::fs::File;
 use std::io::Read;
 use std::mem::swap;
 use std::path::{Path, PathBuf};
-use syn;
 use syn::ext::IdentExt;
 use syn::visit::Visit;
 
@@ -108,7 +107,7 @@ where
                         }),
                     ..
                 }) if path.is_ident("path") => {
-                    let mod_path = self.mod_dir.join(&s.value());
+                    let mod_path = self.mod_dir.join(s.value());
                     return self
                         .parse_mod(mod_path)
                         .unwrap_or_else(|err| self.mod_error = Some(err));
@@ -125,7 +124,7 @@ where
                 .parse_mod(subdir)
                 .unwrap_or_else(|err| self.mod_error = Some(err));
         }
-        let adjacent = self.mod_dir.join(&format!("{}.rs", mod_name));
+        let adjacent = self.mod_dir.join(format!("{}.rs", mod_name));
         if adjacent.is_file() {
             return self
                 .parse_mod(adjacent)
@@ -137,7 +136,7 @@ where
         let subdir = self.current_path.file_name().unwrap().to_str().unwrap();
         if let Some(without_suffix) = subdir.strip_suffix(".rs") {
             // Support the case when "mod bar;" in src/foo.rs means an src/foo/bar.rs file.
-            let adjacent = nested_mod_dir.join(&format!("{}/{}.rs", without_suffix, mod_name));
+            let adjacent = nested_mod_dir.join(format!("{}/{}.rs", without_suffix, mod_name));
             if adjacent.is_file() {
                 return self
                     .parse_mod(adjacent)

@@ -1,4 +1,4 @@
-use tr::{set_translator, Translator, tr};
+use tr::{set_translator, tr, Translator};
 
 struct UpperCaseTranslator;
 impl crate::Translator for UpperCaseTranslator {

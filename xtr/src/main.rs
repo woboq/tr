@@ -114,15 +114,15 @@ fn main() -> Result<(), Error> {
                 .short('d')
                 .long("default-domain")
                 .value_name("name")
-                .help(&tr!("Use name.po for output (instead of messages.po)")),
+                .help(tr!("Use name.po for output (instead of messages.po)")),
         )
-        .arg(arg!(OUTPUT: -o --output <file>).help(&tr!(
+        .arg(arg!(OUTPUT: -o --output <file>).help(tr!(
             "Write output to specified file (instead of messages.po)."
         )))
         .arg(
             arg!(KEYWORDS: -k --keywords <keywordspec>)
                 .action(ArgAction::Append)
-                .help(&tr!(
+                .help(tr!(
                     // documentation for keywordspec goes here
                     "Specify keywordspec as an additional keyword to be looked for. \
                      Refer to the xgettext documentation for more info."
@@ -132,31 +132,31 @@ fn main() -> Result<(), Error> {
             Arg::new("omit-header")
                 .long("omit-header")
                 .action(ArgAction::SetTrue)
-                .help(&tr!(r#"Don’t write header with ‘msgid ""’ entry"#)),
+                .help(tr!(r#"Don’t write header with ‘msgid ""’ entry"#)),
         )
         .arg(
             Arg::new("copyright-holder")
                 .long("copyright-holder")
                 .value_name("string")
-                .help(&tr!("Set the copyright holder in the output.")),
+                .help(tr!("Set the copyright holder in the output.")),
         )
         .arg(
             Arg::new("package-name")
                 .long("package-name")
                 .value_name("package")
-                .help(&tr!("Set the package name in the header of the output.")),
+                .help(tr!("Set the package name in the header of the output.")),
         )
         .arg(
             Arg::new("package-version")
                 .long("package-version")
                 .value_name("version")
-                .help(&tr!("Set the package version in the header of the output.")),
+                .help(tr!("Set the package version in the header of the output.")),
         )
         .arg(
             Arg::new("msgid-bugs-address")
                 .long("msgid-bugs-address")
                 .value_name("email@address")
-                .help(&tr!(
+                .help(tr!(
                     "Set the reporting address for msgid bugs. This is the email address \
                      or URL to which the translators shall report bugs in the untranslated strings"
                 )),
@@ -166,7 +166,7 @@ fn main() -> Result<(), Error> {
                 .long("charset")
                 .value_name("encoding")
                 .default_value("UTF-8")
-                .help(&tr!(
+                .help(tr!(
                     "The encoding used for the characters in the POT file's locale."
                 )),
         )
@@ -174,7 +174,7 @@ fn main() -> Result<(), Error> {
             Arg::new("add-location")
                 .long("add-location")
                 .short('n')
-                .help(&tr!(
+                .help(tr!(
                     "How much message location information to include in the output. \
                      (default). If the type is ‘full’ (the default), it generates the \
                      lines with both file name and line number: ‘#: filename:line’. \
@@ -188,7 +188,7 @@ fn main() -> Result<(), Error> {
         .arg(
             Arg::new("INPUT")
                 // documentation for the input
-                .help(&tr!("Main rust files to parse (will recurse into modules)"))
+                .help(tr!("Main rust files to parse (will recurse into modules)"))
                 .required(true)
                 .action(ArgAction::Append),
         )

@@ -62,7 +62,7 @@ msgstr ""
             copyright = output_details
                 .copyright_holder
                 .unwrap_or_else(|| format!("THE {}'S COPYRIGHT HOLDER", package)),
-            date = Utc::now().format("%Y-%m-%d %H:%M%z").to_string(),
+            date = Utc::now().format("%Y-%m-%d %H:%M%z"),
             address = output_details.bugs_address.unwrap_or_default(),
             charset = output_details.charset,
         )?;
@@ -94,13 +94,13 @@ msgstr ""
             writeln!(output)?;
         }
         if let Some(ref c) = m.msgctxt {
-            writeln!(output, "msgctxt {}", escape(&c))?;
+            writeln!(output, "msgctxt {}", escape(c))?;
         }
 
         writeln!(output, "msgid {}", escape(&m.msgid))?;
 
         if let Some(ref c) = m.plural {
-            writeln!(output, "msgid_plural {}", escape(&c))?;
+            writeln!(output, "msgid_plural {}", escape(c))?;
             writeln!(output, "msgstr[0] \"\"")?;
             writeln!(output, "msgstr[1] \"\"")?;
         } else {

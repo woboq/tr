@@ -129,7 +129,7 @@ impl<'a> Extractor<'a> {
                 }
 
                 // skip to the comma
-                while let Some(token) = token_iter.next() {
+                for token in token_iter.by_ref() {
                     if let TokenTree::Punct(punct) = token {
                         if punct.to_string() == "," {
                             continue 'm;
@@ -151,7 +151,7 @@ impl<'a> Extractor<'a> {
                             plural = args
                                 .get(*i as usize - 1)
                                 .and_then(|x| x.as_ref())
-                                .and_then(|lit| literal_to_string(lit));
+                                .and_then(literal_to_string);
                         } else if let Some(lit) = args.get(*i as usize - 1) {
                             msgid = lit.clone();
                         }
@@ -160,7 +160,7 @@ impl<'a> Extractor<'a> {
                         msgctxt = args
                             .get(*i as usize - 1)
                             .and_then(|x| x.as_ref())
-                            .and_then(|lit| literal_to_string(lit));
+                            .and_then(literal_to_string);
                     }
                 }
             }

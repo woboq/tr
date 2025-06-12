@@ -102,7 +102,7 @@ pub mod runtime_format {
         let mut res = String::with_capacity(2 * fmt_len);
         let mut arg_idx = 0;
         let mut pos = 0;
-        while let Some(mut p) = format_str[pos..].find(|x| x == '{' || x == '}') {
+        while let Some(mut p) = format_str[pos..].find(['{', '}']) {
             if fmt_len - pos < p + 1 {
                 break;
             }
@@ -265,7 +265,7 @@ impl<T: Translator> Translator for std::sync::Arc<T> {
         string: &'a str,
         context: Option<&'a str>,
     ) -> std::borrow::Cow<'a, str> {
-        <T as Translator>::translate(&*self, string, context)
+        <T as Translator>::translate(self, string, context)
     }
 
     fn ntranslate<'a>(
@@ -275,7 +275,7 @@ impl<T: Translator> Translator for std::sync::Arc<T> {
         plural: &'a str,
         context: Option<&'a str>,
     ) -> std::borrow::Cow<'a, str> {
-        <T as Translator>::ntranslate(&*self, n, singular, plural, context)
+        <T as Translator>::ntranslate(self, n, singular, plural, context)
     }
 }
 
@@ -314,7 +314,7 @@ pub mod internal {
     }
     #[cfg(feature = "gettext-rs")]
     fn demangle_context(r: String) -> String {
-        if let Some(x) = r.split('\u{4}').last() {
+        if let Some(x) = r.split('\u{4}').next_back() {
             return x.to_owned();
         }
         r
@@ -326,7 +326,7 @@ pub mod internal {
     impl Translator for DefaultTranslator {
         fn translate<'a>(&'a self, string: &'a str, context: Option<&'a str>) -> Cow<'a, str> {
             Cow::Owned(if let Some(ctx) = context {
-                demangle_context(gettextrs::dgettext(self.0, &mangle_context(ctx, string)))
+                demangle_context(gettextrs::dgettext(self.0, mangle_context(ctx, string)))
             } else {
                 gettextrs::dgettext(self.0, string)
             })
@@ -343,8 +343,8 @@ pub mod internal {
             Cow::Owned(if let Some(ctx) = context {
                 demangle_context(gettextrs::dngettext(
                     self.0,
-                    &mangle_context(ctx, singular),
-                    &mangle_context(ctx, plural),
+                    mangle_context(ctx, singular),
+                    mangle_context(ctx, plural),
                     n,
                 ))
             } else {
