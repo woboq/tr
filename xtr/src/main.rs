@@ -222,10 +222,8 @@ fn main() -> Result<(), Error> {
             let spec = desc[1..]
                 .split(',')
                 .map(|d| {
-                    if d.ends_with('c') {
-                        return SpecArg::Context(
-                            d[..d.len() - 1].parse().expect("invalid keyword spec"),
-                        );
+                    if let Some(d) = d.strip_suffix('c') {
+                        return SpecArg::Context(d.parse().expect("invalid keyword spec"));
                     }
                     SpecArg::MsgId(d.parse().expect("invalid keyword spec"))
                     // TODO: comment or argnum
