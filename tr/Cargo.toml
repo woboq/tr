@@ -18,7 +18,6 @@ mo-translator = ["dep:rspolib"]
 po-translator = ["dep:rspolib"]
 
 [dependencies]
-lazy_static = "1.2"
 gettext-rs = { version = "0.7", optional = true, features = ["gettext-system"] }
 gettext = { version = "0.4", optional = true }
 rspolib = { version = "0.1.1", optional = true }

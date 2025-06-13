@@ -283,13 +283,10 @@ impl<T: Translator> Translator for std::sync::Arc<T> {
 pub mod internal {
 
     use super::Translator;
-    use std::{borrow::Cow, collections::HashMap, sync::RwLock};
+    use std::{borrow::Cow, collections::HashMap, sync::LazyLock, sync::RwLock};
 
-    // TODO: use parking_lot::RwLock
-    lazy_static::lazy_static! {
-        static ref TRANSLATORS: RwLock<HashMap<&'static str, Box<dyn Translator>>> =
-            Default::default();
-    }
+    static TRANSLATORS: LazyLock<RwLock<HashMap<&'static str, Box<dyn Translator>>>> =
+        LazyLock::new(Default::default);
 
     pub fn with_translator<T>(module: &'static str, func: impl FnOnce(&dyn Translator) -> T) -> T {
         let domain = domain_from_module(module);
