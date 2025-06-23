@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.11 - 2025-06-23
+
+ - Set MSRV to Rust 1.81
+ - Fixed clippy warnings
+
+### tr
+
+ - Remove `lazy_static` dependency
+ - Added unset_translator!() macro, to permit undoing a previous set_translator!() call
+ - Implement `Translator` for `std::syn::Arc<Translator>`
+ - Added `MoTranslator` and `PoTranslator` translators
+
 ## 0.1.10 - 2024-08-11
 
 ### tr

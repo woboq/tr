@@ -1,6 +1,6 @@
 [package]
 name = "tr"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["Olivier Goffart <ogoffart@woboq.com>"]
 description = "tr! macro for localisation"
 license = "MIT"
