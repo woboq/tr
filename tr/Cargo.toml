@@ -23,7 +23,7 @@ gettext = { version = "0.4", optional = true }
 rspolib = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0.6"
 
 [[bench]]
 name = "my_bench"
