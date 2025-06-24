@@ -66,7 +66,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //!
 //! - **`gettext-rs`** *(enabled by default)* - This crate wraps the gettext C library
 //! - **`gettext`** - A rust re-implementation of gettext. That crate does not take care of loading the
-//!   right .mo files, so one must use the [`set_translator!] macro with a
+//!   right .mo files, so one must use the [`set_translator!`] macro with a
 //!   `gettext::Catalog` object
 //!
 //! Additionally, this crate permits loading from `.po` or `.mo` files directly via the [`PoTranslator`] and
