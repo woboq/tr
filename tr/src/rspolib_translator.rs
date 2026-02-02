@@ -168,7 +168,7 @@ impl RSPoLibTranslator {
             .and_then(|entry| {
                 entry.split(';').find_map(|sub_entry| {
                     let (key, expression) = sub_entry.split_once('=')?;
-                    if key == "plural" {
+                    if key.trim() == "plural" {
                         Some(
                             plural_rule_parser::parse_rule_expression(expression).map_err(
                                 |parse_error| MoPoTranslatorLoadError::InvalidPluralRules {
