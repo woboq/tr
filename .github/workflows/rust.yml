@@ -16,8 +16,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          # MSRV
-          - 1.81
+          - 1.84 # 1.84 is the first version that supports the MSRV-aware resolver (required, otherwise dependencies won't build)
           - stable
           - beta
           - nightly
