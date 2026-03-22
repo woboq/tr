@@ -32,15 +32,17 @@ where
     V: FnMut(&PathBuf, &str, &syn::File) -> Result<(), Error>,
 {
     let mut parser = Parser {
+        is_root: bool::default(),
         current_path: PathBuf::default(),
         mod_dir: PathBuf::default(),
         mod_error: None,
         mod_visitor: visitor,
     };
-    parser.parse_mod(crate_root)
+    parser.parse_mod(crate_root, true)
 }
 
 struct Parser<ModVisitor> {
+    is_root: bool,         // Parsing lib.rs or main.rs
     current_path: PathBuf, // The current file being parsed
     mod_dir: PathBuf,
     mod_error: Option<Error>, // An error occuring while visiting the modules
@@ -51,16 +53,18 @@ impl<ModVisitor> Parser<ModVisitor>
 where
     ModVisitor: FnMut(&PathBuf, &str, &syn::File) -> Result<(), Error>,
 {
-    fn parse_mod<P: AsRef<Path>>(&mut self, mod_path: P) -> Result<(), Error> {
+    fn parse_mod<P: AsRef<Path>>(&mut self, mod_path: P, is_root: bool) -> Result<(), Error> {
         let mut s = String::new();
         let mut f = File::open(&mod_path)?;
         f.read_to_string(&mut s)?;
 
         let fi = syn::parse_file(&s)?;
 
+        let mut is_root = is_root;
         let mut current_path = mod_path.as_ref().into();
         let mut mod_dir = mod_path.as_ref().parent().unwrap().into();
 
+        swap(&mut self.is_root, &mut is_root);
         swap(&mut self.current_path, &mut current_path);
         swap(&mut self.mod_dir, &mut mod_dir);
 
@@ -71,6 +75,7 @@ where
 
         (self.mod_visitor)(&self.current_path, &s, &fi)?;
 
+        swap(&mut self.is_root, &mut is_root);
         swap(&mut self.current_path, &mut current_path);
         swap(&mut self.mod_dir, &mut mod_dir);
 
@@ -87,6 +92,8 @@ where
             return;
         }
 
+        // Example:
+        //     mod foo { ... }
         if item.content.is_some() {
             let mut parent = self.mod_dir.join(item.ident.to_string());
             swap(&mut self.mod_dir, &mut parent);
@@ -96,6 +103,9 @@ where
         }
 
         // Determine the path of the inner module's file
+        // Example:
+        //     #[path = "tls.rs"]
+        //     mod ssl;
         for attr in &item.attrs {
             match &attr.meta {
                 syn::Meta::NameValue(syn::MetaNameValue {
@@ -109,47 +119,63 @@ where
                 }) if path.is_ident("path") => {
                     let mod_path = self.mod_dir.join(s.value());
                     return self
-                        .parse_mod(mod_path)
+                        .parse_mod(mod_path, self.is_root)
                         .unwrap_or_else(|err| self.mod_error = Some(err));
                 }
                 _ => {}
             }
         }
 
-        let mod_name = item.ident.unraw().to_string();
-        let mut subdir = self.mod_dir.join(mod_name.clone());
-        subdir.push("mod.rs");
-        if subdir.is_file() {
-            return self
-                .parse_mod(subdir)
-                .unwrap_or_else(|err| self.mod_error = Some(err));
-        }
-        let adjacent = self.mod_dir.join(format!("{}.rs", mod_name));
-        if adjacent.is_file() {
-            return self
-                .parse_mod(adjacent)
-                .unwrap_or_else(|err| self.mod_error = Some(err));
-        }
+        let mod_name = item.ident.unraw().to_string(); // unraw("r#move") = "move"
 
-        let mut nested_mod_dir = self.current_path.clone();
-        nested_mod_dir.pop();
-        let subdir = self.current_path.file_name().unwrap().to_str().unwrap();
-        if let Some(without_suffix) = subdir.strip_suffix(".rs") {
-            // Support the case when "mod bar;" in src/foo.rs means an src/foo/bar.rs file.
-            let adjacent = nested_mod_dir.join(format!("{}/{}.rs", without_suffix, mod_name));
+        // In current.rs, "mod foo" can be found in:
+        // 1. ./current/foo.rs
+        // 2. ./current/foo/mod.rs
+        // but if current.rs is in fact lib.rs or main.rs, then in:
+        // 3. ./foo.rs
+        // 4. ./foo/mod.rs
+
+        if self.is_root {
+            // 3. ./foo.rs
+            let adjacent = self.mod_dir.join(format!("{}.rs", mod_name));
             if adjacent.is_file() {
                 return self
-                    .parse_mod(adjacent)
+                    .parse_mod(adjacent, false)
                     .unwrap_or_else(|err| self.mod_error = Some(err));
             }
-            let adjacent_mod = nested_mod_dir
-                .join(without_suffix)
-                .join(&mod_name)
-                .join("mod.rs");
-            if adjacent_mod.is_file() {
+
+            // 4. ./foo/mod.rs
+            let mut subdir = self.mod_dir.join(mod_name.clone());
+            subdir.push("mod.rs");
+            if subdir.is_file() {
                 return self
-                    .parse_mod(adjacent_mod)
+                    .parse_mod(subdir, false)
                     .unwrap_or_else(|err| self.mod_error = Some(err));
+            }
+        } else {
+            let mut nested_mod_dir = self.current_path.clone();
+            nested_mod_dir.pop();
+            let subdir = self.current_path.file_name().unwrap().to_str().unwrap();
+            if let Some(without_suffix) = subdir.strip_suffix(".rs") {
+                // 1. ./current/foo.rs
+                // Support the case when "mod bar;" in src/foo.rs means an src/foo/bar.rs file.
+                let adjacent = nested_mod_dir.join(format!("{}/{}.rs", without_suffix, mod_name));
+                if adjacent.is_file() {
+                    return self
+                        .parse_mod(adjacent, false)
+                        .unwrap_or_else(|err| self.mod_error = Some(err));
+                }
+
+                // 2. ./current/foo/mod.rs
+                let adjacent_mod = nested_mod_dir
+                    .join(without_suffix)
+                    .join(&mod_name)
+                    .join("mod.rs");
+                if adjacent_mod.is_file() {
+                    return self
+                        .parse_mod(adjacent_mod, false)
+                        .unwrap_or_else(|err| self.mod_error = Some(err));
+                }
             }
         }
 
