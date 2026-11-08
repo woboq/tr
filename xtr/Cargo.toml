@@ -8,7 +8,7 @@ readme.workspace = true
 repository.workspace = true
 keywords = ["localization", "l10n", "i18n", "gettext", "xgettext"]
 categories.workspace = true
-edition = "2018"
+edition.workspace = true
 rust-version.workspace = true
 
 
