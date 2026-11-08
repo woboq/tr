@@ -1,15 +1,15 @@
 [package]
 name = "xtr"
-version = "0.1.11"
-authors = ["Olivier Goffart <ogoffart@woboq.com>"]
+version.workspace = true
+authors.workspace = true
 description = "Extract strings from a rust crate to be translated with gettext"
 license = "AGPL-3.0"
-readme = "../README.md"
-repository = "https://github.com/woboq/tr"
-documentation = "https://docs.rs/tr"
+readme.workspace = true
+repository.workspace = true
 keywords = ["localization", "l10n", "i18n", "gettext", "xgettext"]
-categories = ["internationalization", "localization"]
+categories.workspace = true
 edition = "2018"
+rust-version.workspace = true
 
 
 [dependencies]

@@ -1,16 +1,15 @@
 [package]
 name = "tr"
-version = "0.1.11"
-authors = ["Olivier Goffart <ogoffart@woboq.com>"]
+version.workspace = true
+authors.workspace = true
 description = "tr! macro for localisation"
 license = "MIT"
-readme = "../README.md"
-repository = "https://github.com/woboq/tr"
-documentation = "https://docs.rs/tr"
+readme.workspace = true
+repository.workspace = true
 keywords = ["internationalization", "translation", "l10n", "i18n", "gettext"]
-categories = ["internationalization", "localization"]
+categories.workspace = true
 edition = "2021"
-rust-version = "1.86"
+rust-version.workspace = true
 
 [features]
 default = ["gettext-rs"]
