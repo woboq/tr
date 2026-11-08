@@ -376,7 +376,8 @@ pub mod internal {
 
         static START: std::sync::Once = std::sync::Once::new();
         START.call_once(|| {
-            gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "");
+            // SAFETY: tr::init! is meant to be called at startup, before other threads exist
+            unsafe { gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "") };
         });
     }
 

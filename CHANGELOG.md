@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+ - Set MSRV to Rust 1.86
+ - Updated gettext-rs to 0.8 and syn to 3
+
 ## 0.1.11 - 2025-06-23
 
  - Set MSRV to Rust 1.81

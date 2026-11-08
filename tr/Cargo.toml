@@ -10,7 +10,7 @@ documentation = "https://docs.rs/tr"
 keywords = ["internationalization", "translation", "l10n", "i18n", "gettext"]
 categories = ["internationalization", "localization"]
 edition = "2021"
-rust-version = "1.81"
+rust-version = "1.86"
 
 [features]
 default = ["gettext-rs"]
@@ -18,12 +18,12 @@ mo-translator = ["dep:rspolib"]
 po-translator = ["dep:rspolib"]
 
 [dependencies]
-gettext-rs = { version = "0.7", optional = true, features = ["gettext-system"] }
+gettext-rs = { version = "0.8", optional = true, features = ["gettext-system"] }
 gettext = { version = "0.4", optional = true }
 rspolib = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
-criterion = "0.6"
+criterion = "0.8"
 
 [[bench]]
 name = "my_bench"
