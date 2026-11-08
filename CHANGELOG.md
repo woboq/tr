@@ -4,6 +4,8 @@
 
  - Set MSRV to Rust 1.86
  - Updated gettext-rs to 0.8 and syn to 3
+ - `tr_init!` binds the domain to UTF-8, fixing a panic with non-UTF-8 locales
+ - `tr_init!` only sets `LC_MESSAGES` from the environment, instead of the whole locale (`LC_ALL`)
 
 ## 0.1.11 - 2025-06-23
 

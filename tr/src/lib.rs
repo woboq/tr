@@ -372,12 +372,15 @@ pub mod internal {
         // FIXME: change T from `Into<Vec<u8>> to `Into<PathBuf>`
         let dir = String::from_utf8(dir.into()).unwrap();
         // FIXME: don't ignore errors
-        let _ = gettextrs::bindtextdomain(domain_from_module(module), dir);
+        let domain = domain_from_module(module);
+        let _ = gettextrs::bindtextdomain(domain, dir);
+        // tr! returns Rust strings, so translations must be UTF-8 whatever the locale's codeset
+        let _ = gettextrs::bind_textdomain_codeset(domain, "UTF-8");
 
         static START: std::sync::Once = std::sync::Once::new();
         START.call_once(|| {
-            // SAFETY: tr::init! is meant to be called at startup, before other threads exist
-            unsafe { gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "") };
+            // SAFETY: tr_init! is documented to be called before other threads are started
+            unsafe { gettextrs::setlocale(gettextrs::LocaleCategory::LcMessages, "") };
         });
     }
 
@@ -495,7 +498,11 @@ macro_rules! tr {
 /// Initialize the translation for a crate, using gettext's bindtextdomain
 ///
 /// The macro should be called to specify the path in which the .mo files can be looked for.
-/// The argument is the string passed to bindtextdomain
+/// The argument is the string passed to bindtextdomain. The crate's domain is bound to the UTF-8
+/// codeset, and the first call sets the `LC_MESSAGES` locale category from the environment.
+///
+/// Setting the locale is not thread-safe, so this macro should be called early in `main`, before
+/// other threads are started.
 ///
 /// The alternative is to call the set_translator! macro
 ///
