@@ -15,9 +15,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 use anyhow::Error;
-use std::fs::File;
-use std::io::Read;
-use std::mem::swap;
+use std::mem::replace;
 use std::path::{Path, PathBuf};
 use syn::ext::IdentExt;
 use syn::visit::Visit;
@@ -32,17 +30,23 @@ where
     V: FnMut(&PathBuf, &str, &syn::File) -> Result<(), Error>,
 {
     let mut parser = Parser {
-        current_path: PathBuf::default(),
-        mod_dir: PathBuf::default(),
+        scope: Scope::default(),
         mod_error: None,
         mod_visitor: visitor,
     };
-    parser.parse_mod(crate_root)
+    parser.parse_mod(crate_root.as_ref(), true)
+}
+
+/// Where the module being visited is
+#[derive(Default)]
+struct Scope {
+    current_path: PathBuf,  // The current file being parsed
+    mod_dir: PathBuf,       // The directory containing the files of the `mod foo;` declarations
+    path_attr_dir: PathBuf, // The directory `#[path = "..."]` attributes are relative to
 }
 
 struct Parser<ModVisitor> {
-    current_path: PathBuf, // The current file being parsed
-    mod_dir: PathBuf,
+    scope: Scope,
     mod_error: Option<Error>, // An error occuring while visiting the modules
     mod_visitor: ModVisitor,
 }
@@ -51,30 +55,36 @@ impl<ModVisitor> Parser<ModVisitor>
 where
     ModVisitor: FnMut(&PathBuf, &str, &syn::File) -> Result<(), Error>,
 {
-    fn parse_mod<P: AsRef<Path>>(&mut self, mod_path: P) -> Result<(), Error> {
-        let mut s = String::new();
-        let mut f = File::open(&mod_path)?;
-        f.read_to_string(&mut s)?;
-
+    /// Parse the file of a module and visit its sub-modules.
+    ///
+    /// `owns_dir` is true for files whose sub-modules are in the same directory: the crate root,
+    /// `mod.rs` files, and files loaded with a `#[path]` attribute. The sub-modules of any other
+    /// `foo.rs` are in the `foo/` directory.
+    fn parse_mod(&mut self, mod_path: &Path, owns_dir: bool) -> Result<(), Error> {
+        let s = std::fs::read_to_string(mod_path)?;
         let fi = syn::parse_file(&s)?;
 
-        let mut current_path = mod_path.as_ref().into();
-        let mut mod_dir = mod_path.as_ref().parent().unwrap().into();
-
-        swap(&mut self.current_path, &mut current_path);
-        swap(&mut self.mod_dir, &mut mod_dir);
+        let path_attr_dir: PathBuf = mod_path.parent().unwrap().into();
+        let mod_dir = if owns_dir {
+            path_attr_dir.clone()
+        } else {
+            path_attr_dir.join(mod_path.file_stem().unwrap())
+        };
+        let scope = Scope {
+            current_path: mod_path.into(),
+            mod_dir,
+            path_attr_dir,
+        };
+        let parent_scope = replace(&mut self.scope, scope);
 
         self.visit_file(&fi);
-        if let Some(err) = self.mod_error.take() {
-            return Err(err);
-        }
+        let result = match self.mod_error.take() {
+            Some(err) => Err(err),
+            None => (self.mod_visitor)(&self.scope.current_path, &s, &fi),
+        };
 
-        (self.mod_visitor)(&self.current_path, &s, &fi)?;
-
-        swap(&mut self.current_path, &mut current_path);
-        swap(&mut self.mod_dir, &mut mod_dir);
-
-        Ok(())
+        self.scope = parent_scope;
+        result
     }
 }
 
@@ -87,11 +97,18 @@ where
             return;
         }
 
+        let mod_name = item.ident.unraw().to_string();
+
         if item.content.is_some() {
-            let mut parent = self.mod_dir.join(item.ident.to_string());
-            swap(&mut self.mod_dir, &mut parent);
+            let mod_dir = self.scope.mod_dir.join(&mod_name);
+            let scope = Scope {
+                current_path: self.scope.current_path.clone(),
+                path_attr_dir: mod_dir.clone(),
+                mod_dir,
+            };
+            let parent_scope = replace(&mut self.scope, scope);
             syn::visit::visit_item_mod(self, item);
-            swap(&mut self.mod_dir, &mut parent);
+            self.scope = parent_scope;
             return;
         }
 
@@ -107,55 +124,205 @@ where
                         }),
                     ..
                 }) if path.is_ident("path") => {
-                    let mod_path = self.mod_dir.join(s.value());
+                    let mod_path = self.scope.path_attr_dir.join(s.value());
                     return self
-                        .parse_mod(mod_path)
+                        .parse_mod(&mod_path, true)
                         .unwrap_or_else(|err| self.mod_error = Some(err));
                 }
                 _ => {}
             }
         }
 
-        let mod_name = item.ident.unraw().to_string();
-        let mut subdir = self.mod_dir.join(mod_name.clone());
-        subdir.push("mod.rs");
-        if subdir.is_file() {
-            return self
-                .parse_mod(subdir)
-                .unwrap_or_else(|err| self.mod_error = Some(err));
-        }
-        let adjacent = self.mod_dir.join(format!("{}.rs", mod_name));
-        if adjacent.is_file() {
-            return self
-                .parse_mod(adjacent)
-                .unwrap_or_else(|err| self.mod_error = Some(err));
-        }
-
-        let mut nested_mod_dir = self.current_path.clone();
-        nested_mod_dir.pop();
-        let subdir = self.current_path.file_name().unwrap().to_str().unwrap();
-        if let Some(without_suffix) = subdir.strip_suffix(".rs") {
-            // Support the case when "mod bar;" in src/foo.rs means an src/foo/bar.rs file.
-            let adjacent = nested_mod_dir.join(format!("{}/{}.rs", without_suffix, mod_name));
-            if adjacent.is_file() {
+        let adjacent = self.scope.mod_dir.join(format!("{}.rs", mod_name));
+        let subdir = self.scope.mod_dir.join(&mod_name).join("mod.rs");
+        for (mod_path, owns_dir) in [(adjacent, false), (subdir, true)] {
+            if mod_path.is_file() {
                 return self
-                    .parse_mod(adjacent)
-                    .unwrap_or_else(|err| self.mod_error = Some(err));
-            }
-            let adjacent_mod = nested_mod_dir
-                .join(without_suffix)
-                .join(&mod_name)
-                .join("mod.rs");
-            if adjacent_mod.is_file() {
-                return self
-                    .parse_mod(adjacent_mod)
+                    .parse_mod(&mod_path, owns_dir)
                     .unwrap_or_else(|err| self.mod_error = Some(err));
             }
         }
 
         panic!(
             "No file with module definition for `mod {}` in file {:?}",
-            mod_name, self.current_path
+            mod_name, self.scope.current_path
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::visit_crate;
+
+    /// Write the files in a temporary directory, and return the sorted list of files visited
+    /// from the first one, relative to that directory.
+    fn visited(files: &[(&str, &str)]) -> Vec<String> {
+        // Removes the directory when dropped, also when visit_crate panics
+        struct TempDir(std::path::PathBuf);
+        impl Drop for TempDir {
+            fn drop(&mut self) {
+                let _ = std::fs::remove_dir_all(&self.0);
+            }
+        }
+        static COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let id = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let temp_dir =
+            TempDir(std::env::temp_dir().join(format!("xtr-test-{}-{}", std::process::id(), id)));
+        let dir = &temp_dir.0;
+        for (path, content) in files {
+            let path = dir.join(path);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, content).unwrap();
+        }
+        let mut result = Vec::new();
+        visit_crate(dir.join(files[0].0), |path, _, _| {
+            let path = path.strip_prefix(dir).unwrap();
+            result.push(path.to_str().unwrap().replace('\\', "/"));
+            Ok(())
+        })
+        .unwrap();
+        result.sort();
+        result
+    }
+
+    /// Check that each of the files is visited exactly once from the first one
+    fn assert_visits_all(files: &[(&str, &str)]) {
+        let mut expected: Vec<_> = files.iter().map(|(path, _)| path.to_string()).collect();
+        expected.sort();
+        assert_eq!(visited(files), expected);
+    }
+
+    #[test]
+    fn crate_root() {
+        // lib.rs and main.rs, also inside a directory, own the directory they are in
+        assert_visits_all(&[("lib.rs", "mod foo;"), ("foo.rs", "")]);
+        assert_visits_all(&[
+            ("src/main.rs", "mod foo; mod bar;"),
+            ("src/foo.rs", ""),
+            ("src/bar/mod.rs", ""),
+        ]);
+        // so does any other file given as the crate root
+        assert_visits_all(&[("bin/tool.rs", "mod foo;"), ("bin/foo.rs", "")]);
+    }
+
+    #[test]
+    fn non_mod_rs_file() {
+        // `mod bar;` in foo.rs is foo/bar.rs, not the bar.rs next to it
+        assert_visits_all(&[
+            ("lib.rs", "mod foo; mod bar;"),
+            ("foo.rs", "mod bar;"),
+            ("foo/bar.rs", ""),
+            ("bar.rs", ""),
+        ]);
+        // or foo/bar/mod.rs, and so on at any depth
+        assert_visits_all(&[
+            ("lib.rs", "mod foo;"),
+            ("foo.rs", "mod bar; mod baz;"),
+            ("foo/bar/mod.rs", ""),
+            ("foo/baz.rs", "mod qux;"),
+            ("foo/baz/qux.rs", ""),
+        ]);
+    }
+
+    #[test]
+    fn mod_rs_file() {
+        // sub-modules of mod.rs are in its own directory
+        assert_visits_all(&[
+            ("lib.rs", "mod foo;"),
+            ("foo/mod.rs", "mod bar; mod baz;"),
+            ("foo/bar.rs", "mod qux;"),
+            ("foo/bar/qux.rs", ""),
+            ("foo/baz/mod.rs", "mod quux;"),
+            ("foo/baz/quux.rs", ""),
+        ]);
+    }
+
+    #[test]
+    fn inline_modules() {
+        // inline modules add a directory, at any depth
+        assert_visits_all(&[
+            ("lib.rs", "mod a { mod b; mod c { mod d; } }"),
+            ("a/b.rs", ""),
+            ("a/c/d.rs", ""),
+        ]);
+        // in a file that is not mod.rs, below the directory named after the file
+        assert_visits_all(&[
+            ("lib.rs", "mod foo;"),
+            ("foo.rs", "mod a { mod b; }"),
+            ("foo/a/b.rs", ""),
+        ]);
+        // in mod.rs, below its own directory
+        assert_visits_all(&[
+            ("lib.rs", "mod foo;"),
+            ("foo/mod.rs", "mod a { mod b; }"),
+            ("foo/a/b.rs", ""),
+        ]);
+        // inline modules do not affect the sibling declarations that follow them
+        assert_visits_all(&[
+            ("lib.rs", "mod a { mod b; } mod c;"),
+            ("a/b.rs", ""),
+            ("c.rs", ""),
+        ]);
+    }
+
+    #[test]
+    fn path_attribute() {
+        // relative to the file's directory, also in a file that is not mod.rs
+        assert_visits_all(&[
+            ("lib.rs", "#[path = \"x/y.rs\"] mod z; mod foo;"),
+            ("x/y.rs", ""),
+            ("foo.rs", "#[path = \"other.rs\"] mod p;"),
+            ("other.rs", ""),
+        ]);
+        // `..` can go out of the directory, and is kept in the visited path
+        assert_eq!(
+            visited(&[
+                ("src/lib.rs", "#[path = \"../shared/s.rs\"] mod s;"),
+                ("shared/s.rs", ""),
+            ]),
+            ["src/../shared/s.rs", "src/lib.rs"]
+        );
+        // inside an inline module, relative to the inline module's directory
+        assert_visits_all(&[
+            ("lib.rs", "mod a { #[path = \"p.rs\"] mod q; } mod foo;"),
+            ("a/p.rs", ""),
+            ("foo.rs", "mod b { #[path = \"p.rs\"] mod q; }"),
+            ("foo/b/p.rs", ""),
+        ]);
+        // the sub-modules of a #[path] file are in its own directory, whatever its name
+        assert_visits_all(&[
+            ("lib.rs", "#[path = \"other/p.rs\"] mod p;"),
+            ("other/p.rs", "mod q;"),
+            ("other/q.rs", ""),
+        ]);
+    }
+
+    #[test]
+    fn raw_identifiers() {
+        assert_visits_all(&[
+            ("lib.rs", "mod r#move; mod r#type { mod r#loop; }"),
+            ("move.rs", "mod r#async;"),
+            ("move/async.rs", ""),
+            ("type/loop.rs", ""),
+        ]);
+    }
+
+    #[test]
+    fn every_declaration_is_visited() {
+        // cfg attributes are ignored, so messages of all platforms are extracted
+        assert_visits_all(&[
+            (
+                "lib.rs",
+                "#[cfg(unix)] mod unix; #[cfg(windows)] mod windows;",
+            ),
+            ("unix.rs", ""),
+            ("windows.rs", ""),
+        ]);
+    }
+
+    #[test]
+    #[should_panic(expected = "No file with module definition for `mod missing`")]
+    fn missing_file() {
+        visited(&[("lib.rs", "mod missing;")]);
     }
 }
